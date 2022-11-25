@@ -1,0 +1,4 @@
+# Custom Dictionary Words
+cloudinary
+maxlength
+newss
