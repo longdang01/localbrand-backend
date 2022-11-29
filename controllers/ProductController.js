@@ -63,11 +63,38 @@ const get = asyncHandler(async (req, res) => {
 // @route   POST /api/products/search
 // @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
   const sort = { createdAt: -1 };
-  const products = await Product.find(query)
+  let query = { isActive: 1 };
+  let hasCategory = null;
+  let products;
+  let tmp;
+
+  // search by name
+  if (req.body.keyword) {
+    query = {
+      $and: [
+        { productName: { $regex: ".*" + req.body.keyword + ".*" } },
+        { isActive: 1 },
+      ],
+    };
+  }
+
+  // search by subCategory
+  if (req.body.subCategory) {
+    query = {
+      $and: [{ subCategory: req.body.subCategory }, { isActive: 1 }],
+    };
+  }
+
+  // search by category
+  if (req.body.category) {
+    query = { isActive: 1 };
+    hasCategory = { category: req.body.category };
+  }
+  // products =
+  await Product.find(query)
     .sort(sort)
-    .populate("subCategory")
+    .populate("subCategory", null, hasCategory)
     .populate({
       path: "colors",
       populate: [
@@ -92,23 +119,30 @@ const search = asyncHandler(async (req, res) => {
           model: "Discount",
         },
       ],
+    })
+    .exec(async (err, docs) => {
+      docs = docs.filter(function (doc) {
+        return doc.subCategory != null;
+      });
+      // get related
+      const categories = await Category.find({ isActive: 1 }).populate(
+        "subCategories"
+      );
+      const brands = await Brand.find({ isActive: 1 }).sort(sort);
+      const suppliers = await Supplier.find({ isActive: 1 }).sort(sort);
+      const collections = await Collection.find({ isActive: 1 })
+        .sort(sort)
+        .populate("images")
+        .populate("products");
+
+      res.status(200).json({
+        products: docs,
+        categories: categories,
+        brands: brands,
+        suppliers: suppliers,
+        collections: collections,
+      });
     });
-
-  const categories = await Category.find(query).populate("subCategories");
-  const brands = await Brand.find(query).sort(sort);
-  const suppliers = await Supplier.find(query).sort(sort);
-  const collections = await Collection.find(query)
-    .sort(sort)
-    .populate("images")
-    .populate("products");
-
-  res.status(200).json({
-    products: products,
-    categories: categories,
-    brands: brands,
-    suppliers: suppliers,
-    collections: collections,
-  });
 });
 
 // @desc    Get products
