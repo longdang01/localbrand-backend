@@ -12,10 +12,20 @@ const ordersSchema = mongoose.Schema(
       required: true,
       ref: "Transport",
     },
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Customer",
+    },
     deliveryAddress: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: "DeliveryAddress",
+    },
+    ordersCode: {
+      type: String,
+      required: true,
+      unique: true,
     },
     orderDate: {
       type: Date,

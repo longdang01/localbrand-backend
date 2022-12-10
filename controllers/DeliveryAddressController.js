@@ -6,7 +6,7 @@ const { ObjectId } = require("mongodb");
 // @route   GET /api/deliveryAddress/
 // @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { isActive: { $ne: -1 } };
   const sort = { createdAt: -1 };
 
   const deliveryAddressList = await DeliveryAddress.find(query).sort(sort);
@@ -18,7 +18,10 @@ const get = asyncHandler(async (req, res) => {
 // @route   POST /api/deliveryAddress/search
 // @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = {
+    $and: [{ customer: req.body.customer }, { isActive: { $ne: -1 } }],
+  };
+  const sort = { createdAt: -1 };
   const deliveryAddressList = await DeliveryAddress.find(query).sort(sort);
 
   res.status(200).json(deliveryAddressList);
@@ -28,7 +31,7 @@ const search = asyncHandler(async (req, res) => {
 // @route   GET /api/deliveryAddress/:id
 // @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
+  const query = { _id: ObjectId(req.params.id) };
   const deliveryAddress = await DeliveryAddress.findById(query);
 
   res.status(200).json(deliveryAddress);
@@ -38,11 +41,18 @@ const getById = asyncHandler(async (req, res) => {
 // @route   POST /api/deliveryAddress
 // @access  Private
 const create = asyncHandler(async (req, res) => {
+  if (req.body.isActive == 1) {
+    await DeliveryAddress.updateMany(
+      { isActive: 1 },
+      { $set: { isActive: 0 } }
+    );
+  }
   const deliveryAddress = new DeliveryAddress({
     customer: req.body.customer,
     deliveryAddressName: req.body.deliveryAddressName,
     consigneeName: req.body.consigneeName,
     consigneePhone: req.body.consigneePhone,
+    isActive: req.body.isActive,
   });
 
   const savedData = await deliveryAddress.save();
@@ -58,6 +68,14 @@ const update = asyncHandler(async (req, res) => {
   deliveryAddress.deliveryAddressName = req.body.deliveryAddressName;
   deliveryAddress.consigneeName = req.body.consigneeName;
   deliveryAddress.consigneePhone = req.body.consigneePhone;
+  deliveryAddress.isActive = req.body.isActive;
+
+  if (deliveryAddress.isActive == 1) {
+    await DeliveryAddress.updateMany(
+      { isActive: 1 },
+      { $set: { isActive: 0 } }
+    );
+  }
 
   const savedData = await deliveryAddress.save();
   res.status(200).json(savedData);

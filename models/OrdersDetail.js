@@ -5,20 +5,35 @@ const ordersDetailSchema = mongoose.Schema(
     orders: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Orders",
     },
     product: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Product",
     },
     color: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Color",
     },
     size: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Size",
+    },
+    price: {
+      type: Number,
+      required: true,
     },
     quantity: {
+      type: Number,
+      required: true,
+    },
+    note: {
+      type: String,
+    },
+    status: {
       type: Number,
       required: true,
     },

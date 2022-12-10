@@ -7,6 +7,12 @@ const cartSchema = mongoose.Schema(
       required: true,
       ref: "Customer",
     },
+    cartDetails: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CartDetail",
+      },
+    ],
     isActive: {
       type: Number,
       required: true,

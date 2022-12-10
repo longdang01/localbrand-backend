@@ -21,6 +21,10 @@ const staffRouter = require("./staff");
 const userRouter = require("./user");
 const roleRouter = require("./role");
 const slideRouter = require("./slide");
+const cartRouter = require("./cart");
+const cartDetailRouter = require("./cartDetail");
+const ordersDetailRouter = require("./ordersDetail");
+
 const uploadRouter = require("./upload");
 
 const useRoutes = (app) => {
@@ -48,6 +52,10 @@ const useRoutes = (app) => {
   app.use("/api/users", userRouter);
   app.use("/api/roles", roleRouter);
   app.use("/api/slides", slideRouter);
+
+  app.use("/api/carts", cartRouter);
+  app.use("/api/cartDetails", cartDetailRouter);
+  app.use("/api/ordersDetails", ordersDetailRouter);
 
   app.use("/api/upload", uploadRouter);
 };

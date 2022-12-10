@@ -14,7 +14,6 @@ const get = asyncHandler(async (req, res) => {
   const query = { isActive: 1 };
   const colors = await Color.find(query)
     .populate("product")
-    .populate("price")
     .populate("sizes")
     .populate("images")
     .populate("sales")
@@ -30,7 +29,6 @@ const search = asyncHandler(async (req, res) => {
   const query = { isActive: 1 };
   const colors = await Color.find(query)
     .populate("product")
-    .populate("price")
     .populate("sizes")
     .populate("images")
     .populate("sales")
@@ -46,7 +44,6 @@ const getById = asyncHandler(async (req, res) => {
   const query = { _id: ObjectId(req.params.id), isActive: 1 };
   const color = await Color.findById(query)
     .populate("product")
-    .populate("price")
     .populate("sizes")
     .populate("images")
     .populate("sales")

@@ -9,14 +9,17 @@ const cartDetailSchema = mongoose.Schema(
     product: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Product",
     },
     color: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Color",
     },
     size: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "Size",
     },
     quantity: {
       type: Number,
@@ -25,7 +28,6 @@ const cartDetailSchema = mongoose.Schema(
     isActive: {
       type: Number,
       required: true,
-      default: 1,
     },
   },
   {

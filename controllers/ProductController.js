@@ -66,14 +66,13 @@ const search = asyncHandler(async (req, res) => {
   const sort = { createdAt: -1 };
   let query = { isActive: 1 };
   let hasCategory = null;
-  let products;
-  let tmp;
 
   // search by name
   if (req.body.keyword) {
     query = {
       $and: [
-        { productName: { $regex: ".*" + req.body.keyword + ".*" } },
+        // { productName: { $regex: ".*" + req.body.keyword + ".*" } },
+        { productName: { $regex: req.body.keyword, $options: "i" } },
         { isActive: 1 },
       ],
     };
@@ -121,6 +120,9 @@ const search = asyncHandler(async (req, res) => {
       ],
     })
     .exec(async (err, docs) => {
+      // console.log(docs);
+      // items not match with condition => subCategory = null =>
+      // filter => item match
       docs = docs.filter(function (doc) {
         return doc.subCategory != null;
       });
@@ -150,7 +152,7 @@ const search = asyncHandler(async (req, res) => {
 // @access  Private
 const getById = asyncHandler(async (req, res) => {
   const query = { _id: ObjectId(req.params.id), isActive: 1 };
-  const product = await Product.findById(query)
+  const product = await Product.findOne(query)
     .populate("subCategory")
     .populate({
       path: "colors",

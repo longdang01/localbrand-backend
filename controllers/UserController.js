@@ -72,9 +72,9 @@ const login = asyncHandler(async (req, res) => {
 // @route   GET /api/users/me
 // @access  Private
 const getMe = asyncHandler(async (req, res) => {
-  const query = { user: ObjectId(req.user.id), isActive: 1 };
+  const query = { user: ObjectId(req.user._id), isActive: 1 };
   const staff = await Staff.findOne(query).populate("role");
-  const customer = await Customer.findOne(query).populate("role");
+  const customer = await Customer.findOne(query);
   res.status(200).json({ user: req.user, staff: staff, customer: customer });
 
   // res.status(200).json(staff);
