@@ -12,7 +12,6 @@ const slideSchema = mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
     },
     isActive: {
       type: Number,

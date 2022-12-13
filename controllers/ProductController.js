@@ -59,6 +59,110 @@ const get = asyncHandler(async (req, res) => {
   });
 });
 
+// // @desc    GET products
+// // @route   GET /api/products/get-bestsellers
+// // @access  Private
+const getNew = asyncHandler(async (req, res) => {
+  const query = { isActive: 1 };
+  const sort = { createdAt: -1 };
+  const products = await Product.find(query)
+    .sort(sort)
+    .populate("subCategory")
+    .populate({
+      path: "colors",
+      populate: [
+        {
+          path: "sizes",
+          model: "Size",
+        },
+        {
+          path: "images",
+          model: "ColorImage",
+        },
+        {
+          path: "sales",
+          model: "Discount",
+        },
+        {
+          path: "sales",
+          model: "Discount",
+        },
+        {
+          path: "codes",
+          model: "Discount",
+        },
+      ],
+    });
+
+  const categories = await Category.find(query).populate("subCategories");
+  const brands = await Brand.find(query).sort(sort);
+  const suppliers = await Supplier.find(query).sort(sort);
+  const collections = await Collection.find(query)
+    .sort(sort)
+    .populate("images")
+    .populate("products");
+
+  res.status(200).json({
+    products: products,
+    categories: categories,
+    brands: brands,
+    suppliers: suppliers,
+    collections: collections,
+  });
+});
+
+// // @desc    GET products
+// // @route   GET /api/products/get-bestsellers
+// // @access  Private
+const getBestSeller = asyncHandler(async (req, res) => {
+  const query = { isActive: 1 };
+  const sort = { createdAt: -1 };
+  const products = await Product.find(query)
+    .sort(sort)
+    .populate("subCategory")
+    .populate({
+      path: "colors",
+      populate: [
+        {
+          path: "sizes",
+          model: "Size",
+        },
+        {
+          path: "images",
+          model: "ColorImage",
+        },
+        {
+          path: "sales",
+          model: "Discount",
+        },
+        {
+          path: "sales",
+          model: "Discount",
+        },
+        {
+          path: "codes",
+          model: "Discount",
+        },
+      ],
+    });
+
+  const categories = await Category.find(query).populate("subCategories");
+  const brands = await Brand.find(query).sort(sort);
+  const suppliers = await Supplier.find(query).sort(sort);
+  const collections = await Collection.find(query)
+    .sort(sort)
+    .populate("images")
+    .populate("products");
+
+  res.status(200).json({
+    products: products,
+    categories: categories,
+    brands: brands,
+    suppliers: suppliers,
+    collections: collections,
+  });
+});
+
 // @desc    POST products
 // @route   POST /api/products/search
 // @access  Private
