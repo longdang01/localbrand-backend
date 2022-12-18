@@ -1,7 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
+const Orders = require("../models/Orders");
+const OrdersDetail = require("../models/OrdersDetail");
 const Brand = require("../models/Brand");
+const Discount = require("../models/Discount");
 const Supplier = require("../models/Supplier");
 const Collection = require("../models/Collection");
 const Color = require("../models/Color");
@@ -26,10 +29,6 @@ const get = asyncHandler(async (req, res) => {
         {
           path: "images",
           model: "ColorImage",
-        },
-        {
-          path: "sales",
-          model: "Discount",
         },
         {
           path: "sales",
@@ -67,6 +66,7 @@ const getNew = asyncHandler(async (req, res) => {
   const sort = { createdAt: -1 };
   const products = await Product.find(query)
     .sort(sort)
+    .limit(8)
     .populate("subCategory")
     .populate({
       path: "colors",
@@ -94,30 +94,83 @@ const getNew = asyncHandler(async (req, res) => {
       ],
     });
 
-  const categories = await Category.find(query).populate("subCategories");
-  const brands = await Brand.find(query).sort(sort);
-  const suppliers = await Supplier.find(query).sort(sort);
-  const collections = await Collection.find(query)
-    .sort(sort)
-    .populate("images")
-    .populate("products");
-
   res.status(200).json({
     products: products,
-    categories: categories,
-    brands: brands,
-    suppliers: suppliers,
-    collections: collections,
   });
 });
 
 // // @desc    GET products
 // // @route   GET /api/products/get-bestsellers
 // // @access  Private
-const getBestSeller = asyncHandler(async (req, res) => {
+const getBestSellers = asyncHandler(async (req, res) => {
+  const results = await Orders.find({ status: 3 }).populate("ordersDetails");
+  let products = [];
+  results.forEach((item) => {
+    item.ordersDetails.forEach((item) => {
+      products.push(item.product);
+    });
+  });
+
+  // res.status(200).json({ products: results });
+
+  // const results = await OrdersDetail.aggregate([
+  //   { $match: { status: 0 } },
+  //   {
+  //     $group: {
+  //       _id: "$product",
+  //       sum_val: { $sum: "$quantity" },
+  //     },
+  //   },
+  // ])
+  //   .sort({ sum_val: -1 })
+  //   .limit(8);
+
+  // console.log(results);
+  let productBestSellers = [];
+  await Promise.all(
+    products.map(async (item) => {
+      let product = await Product.findOne({ _id: item })
+        .populate("subCategory")
+        .populate({
+          path: "colors",
+          populate: [
+            {
+              path: "sizes",
+              model: "Size",
+            },
+            {
+              path: "images",
+              model: "ColorImage",
+            },
+            {
+              path: "sales",
+              model: "Discount",
+            },
+            {
+              path: "sales",
+              model: "Discount",
+            },
+            {
+              path: "codes",
+              model: "Discount",
+            },
+          ],
+        });
+
+      productBestSellers.push(product);
+    })
+  );
+
+  res.status(200).json({ products: productBestSellers });
+});
+
+// // @desc    GET products
+// // @route   GET /api/products/get-sales
+// // @access  Private
+const getSales = asyncHandler(async (req, res) => {
   const query = { isActive: 1 };
   const sort = { createdAt: -1 };
-  const products = await Product.find(query)
+  const results = await Product.find(query)
     .sort(sort)
     .populate("subCategory")
     .populate({
@@ -136,31 +189,57 @@ const getBestSeller = asyncHandler(async (req, res) => {
           model: "Discount",
         },
         {
-          path: "sales",
-          model: "Discount",
-        },
-        {
           path: "codes",
           model: "Discount",
         },
       ],
     });
 
-  const categories = await Category.find(query).populate("subCategories");
-  const brands = await Brand.find(query).sort(sort);
-  const suppliers = await Supplier.find(query).sort(sort);
-  const collections = await Collection.find(query)
-    .sort(sort)
-    .populate("images")
-    .populate("products");
-
-  res.status(200).json({
-    products: products,
-    categories: categories,
-    brands: brands,
-    suppliers: suppliers,
-    collections: collections,
+  let products = [];
+  results.forEach((item) => {
+    item.colors.forEach((item) => {
+      if (item.sales.length != 0) {
+        products.push(item.product);
+      }
+    });
   });
+
+  let productSales = [];
+  await Promise.all(
+    products.map(async (item) => {
+      let product = await Product.findOne({ _id: item })
+        .populate("subCategory")
+        .populate({
+          path: "colors",
+          populate: [
+            {
+              path: "sizes",
+              model: "Size",
+            },
+            {
+              path: "images",
+              model: "ColorImage",
+            },
+            {
+              path: "sales",
+              model: "Discount",
+            },
+            {
+              path: "sales",
+              model: "Discount",
+            },
+            {
+              path: "codes",
+              model: "Discount",
+            },
+          ],
+        });
+
+      productSales.push(product);
+    })
+  );
+
+  res.status(200).json({ products: productSales });
 });
 
 // @desc    POST products
@@ -402,6 +481,9 @@ const remove = asyncHandler(async (req, res) => {
 module.exports = {
   get,
   search,
+  getNew,
+  getBestSellers,
+  getSales,
   getById,
   create,
   update,

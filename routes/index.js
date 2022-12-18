@@ -24,6 +24,7 @@ const slideRouter = require("./slide");
 const cartRouter = require("./cart");
 const cartDetailRouter = require("./cartDetail");
 const ordersDetailRouter = require("./ordersDetail");
+const staticsRouter = require("./statics");
 
 const uploadRouter = require("./upload");
 
@@ -56,6 +57,7 @@ const useRoutes = (app) => {
   app.use("/api/carts", cartRouter);
   app.use("/api/cartDetails", cartDetailRouter);
   app.use("/api/ordersDetails", ordersDetailRouter);
+  app.use("/api/statics", staticsRouter);
 
   app.use("/api/upload", uploadRouter);
 };

@@ -4,6 +4,9 @@ const router = express.Router();
 const {
   get,
   search,
+  getNew,
+  getBestSellers,
+  getSales,
   getById,
   create,
   update,
@@ -12,6 +15,9 @@ const {
 
 //list api
 router.post("/search", search);
+router.get("/get-new", getNew);
+router.get("/get-bestsellers", getBestSellers);
+router.get("/get-sales", getSales);
 router.route("/").get(get).post(create);
 router.route("/:id").get(getById).put(update).delete(remove);
 
