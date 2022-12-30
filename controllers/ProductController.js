@@ -107,9 +107,13 @@ const getBestSellers = asyncHandler(async (req, res) => {
   let products = [];
   results.forEach((item) => {
     item.ordersDetails.forEach((item) => {
-      products.push(item.product);
+      if (products.findIndex((ele) => ele == item.product) == -1) {
+        products.push(item.product.toString());
+      }
     });
   });
+
+  console.log(products);
 
   // res.status(200).json({ products: results });
 
@@ -129,7 +133,7 @@ const getBestSellers = asyncHandler(async (req, res) => {
   let productBestSellers = [];
   await Promise.all(
     products.map(async (item) => {
-      let product = await Product.findOne({ _id: item })
+      let product = await Product.findOne({ _id: ObjectId(item) })
         .populate("subCategory")
         .populate({
           path: "colors",
@@ -250,15 +254,10 @@ const search = asyncHandler(async (req, res) => {
   let query = { isActive: 1 };
   let hasCategory = null;
 
-  // search by name
-  if (req.body.keyword) {
-    query = {
-      $and: [
-        // { productName: { $regex: ".*" + req.body.keyword + ".*" } },
-        { productName: { $regex: req.body.keyword, $options: "i" } },
-        { isActive: 1 },
-      ],
-    };
+  // search by category
+  if (req.body.category) {
+    // query = { isActive: 1 };
+    hasCategory = { category: req.body.category };
   }
 
   // search by subCategory
@@ -268,10 +267,15 @@ const search = asyncHandler(async (req, res) => {
     };
   }
 
-  // search by category
-  if (req.body.category) {
-    query = { isActive: 1 };
-    hasCategory = { category: req.body.category };
+  // search by name
+  if (req.body.keyword) {
+    query = {
+      $and: [
+        // { productName: { $regex: ".*" + req.body.keyword + ".*" } },
+        { productName: { $regex: req.body.keyword, $options: "i" } },
+        { isActive: 1 },
+      ],
+    };
   }
   // products =
   await Product.find(query)
@@ -306,6 +310,7 @@ const search = asyncHandler(async (req, res) => {
       // console.log(docs);
       // items not match with condition => subCategory = null =>
       // filter => item match
+      console.log(docs);
       docs = docs.filter(function (doc) {
         return doc.subCategory != null;
       });
