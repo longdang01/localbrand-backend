@@ -7,7 +7,7 @@ const { ObjectId } = require("mongodb");
 // @route   GET /api/sizes/
 // @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { isActive: { $ne: -1 } };
   const sizes = await Size.find(query);
 
   res.status(200).json(sizes);
@@ -17,7 +17,7 @@ const get = asyncHandler(async (req, res) => {
 // @route   POST /api/sizes/search
 // @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { isActive: { $ne: -1 } };
   const sizes = await Size.find(query);
 
   res.status(200).json(sizes);
@@ -27,7 +27,7 @@ const search = asyncHandler(async (req, res) => {
 // @route   GET /api/sizes/:id
 // @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
+  const query = { _id: ObjectId(req.params.id) };
   const size = await Size.findById(query);
 
   res.status(200).json(size);
@@ -41,6 +41,7 @@ const create = asyncHandler(async (req, res) => {
     color: req.body.color,
     sizeName: req.body.sizeName,
     quantity: req.body.quantity,
+    isActive: req.body.isActive,
   });
 
   const savedData = await size.save();
@@ -57,6 +58,7 @@ const update = asyncHandler(async (req, res) => {
   size.color = req.body.color;
   size.sizeName = req.body.sizeName;
   size.quantity = req.body.quantity;
+  size.isActive = req.body.isActive;
 
   const savedData = await size.save();
   res.status(200).json(savedData);

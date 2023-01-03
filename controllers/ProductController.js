@@ -384,7 +384,6 @@ const create = asyncHandler(async (req, res) => {
     origin: req.body.origin,
     material: req.body.material,
     style: req.body.style,
-    style: req.body.style,
     sizeGuide: req.body.sizeGuide,
     description: req.body.description,
   });
@@ -435,7 +434,6 @@ const update = asyncHandler(async (req, res) => {
   product.origin = req.body.origin;
   product.material = req.body.material;
   product.style = req.body.style;
-  product.style = req.body.style;
   product.sizeGuide = req.body.sizeGuide;
   product.description = req.body.description;
 
@@ -458,10 +456,7 @@ const update = asyncHandler(async (req, res) => {
             path: "sales",
             model: "Discount",
           },
-          {
-            path: "sales",
-            model: "Discount",
-          },
+
           {
             path: "codes",
             model: "Discount",

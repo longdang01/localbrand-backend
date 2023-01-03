@@ -17,7 +17,6 @@ const sizeSchema = mongoose.Schema(
     isActive: {
       type: Number,
       required: true,
-      default: 1,
     },
   },
   {

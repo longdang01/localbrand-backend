@@ -19,6 +19,10 @@ const colorSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
+    priceImport: {
+      type: Number,
+      required: true,
+    },
     sizes: [
       {
         type: mongoose.Schema.Types.ObjectId,

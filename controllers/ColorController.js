@@ -11,7 +11,13 @@ const { ObjectId } = require("mongodb");
 // @route   GET /api/colors/
 // @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  // await Color.updateMany({ isActive: 0 }, { $set: { isActive: 1 } });
+  // res.status(200).json("success");
+
+  // await Size.updateMany({ isActive: 1 }, { $set: { isActive: 0 } });
+  // res.status(200).json("success");
+
+  const query = { isActive: { $ne: -1 } };
   const colors = await Color.find(query)
     .populate("product")
     .populate("sizes")
@@ -26,7 +32,7 @@ const get = asyncHandler(async (req, res) => {
 // @route   POST /api/colors/search
 // @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { isActive: { $ne: -1 } };
   const colors = await Color.find(query)
     .populate("product")
     .populate("sizes")
@@ -41,7 +47,7 @@ const search = asyncHandler(async (req, res) => {
 // @route   GET /api/colors/:id
 // @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
+  const query = { _id: ObjectId(req.params.id) };
   const color = await Color.findById(query)
     .populate("product")
     .populate("sizes")
@@ -60,6 +66,7 @@ const create = asyncHandler(async (req, res) => {
   const color = new Color({
     product: req.body.product,
     price: req.body.price,
+    priceImport: req.body.priceImport,
     colorName: req.body.colorName,
     hex: req.body.hex,
   });
@@ -80,6 +87,7 @@ const update = asyncHandler(async (req, res) => {
   const color = await Color.findById(req.params.id);
   color.product = req.body.product;
   color.price = req.body.price;
+  color.priceImport = req.body.priceImport;
   color.colorName = req.body.colorName;
   color.hex = req.body.hex;
 

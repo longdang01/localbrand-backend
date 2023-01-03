@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const News = require("../models/News");
+const Color = require("../models/Color");
 const { ObjectId } = require("mongodb");
 
 // @desc    GET newss
