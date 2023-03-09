@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Orders = require("../models/Orders");
+const Customer = require("../models/Customer");
 const OrdersStatus = require("../models/OrdersStatus");
 const OrdersDetail = require("../models/OrdersDetail");
 const { ObjectId } = require("mongodb");
@@ -9,6 +10,8 @@ const {
   updateSize,
   deleteCartDetail,
 } = require("../utils/handleData");
+
+const { sendMail } = require("../utils/mail");
 
 // @desc    GET orders
 // @route   GET /api/orders/
@@ -113,6 +116,7 @@ const getById = asyncHandler(async (req, res) => {
 // @route   POST /api/orders
 // @access  Private
 // purchase
+
 const create = asyncHandler(async (req, res) => {
   if (!req.body.note) req.body.note = null;
   const code = await createOrdersCode();
@@ -126,12 +130,13 @@ const create = asyncHandler(async (req, res) => {
     note: req.body.note,
     total: req.body.total,
     status: 0,
-    paid: 0,
+    paid: req.body.isPaid ? 1 : 0,
   });
 
   const savedData = await orders.save();
 
   // add ordersDetails
+  let contentEmail = "";
   const cartDetails = req.body.cartDetails;
   for (let i = 0; i < cartDetails.length; i++) {
     const ordersDetail = new OrdersDetail({
@@ -153,7 +158,17 @@ const create = asyncHandler(async (req, res) => {
     });
 
     await deleteCartDetail(cartDetails[i]);
+
+    contentEmail += cartDetails[i].product.productName + "\n";
   }
+
+  const customer = await Customer.findById(req.body.customer);
+  console.log(customer.email);
+  await sendMail(
+    customer.email,
+    `[FRAGILE ORDERS]: Đặt hàng thành công ngày ${savedData.orderDate}`,
+    `Danh sách sản phẩm đặt bao gồm: \n${contentEmail}`
+  );
 
   res.status(200).json(
     await Orders.findById(savedData._id)

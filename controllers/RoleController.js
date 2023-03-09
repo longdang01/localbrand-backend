@@ -6,7 +6,7 @@ const { ObjectId } = require("mongodb");
 // @route   GET /api/roles/
 // @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { isActive: { $ne: -1 } };
   const roles = await Role.find(query);
 
   res.status(200).json(roles);
@@ -16,7 +16,7 @@ const get = asyncHandler(async (req, res) => {
 // @route   POST /api/roles/search
 // @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { isActive: { $ne: -1 } };
   const roles = await Role.find(query);
 
   res.status(200).json(roles);
@@ -26,7 +26,7 @@ const search = asyncHandler(async (req, res) => {
 // @route   GET /api/roles/:id
 // @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
+  const query = { _id: ObjectId(req.params.id) };
   const role = await Role.findById(query);
 
   res.status(200).json(role);
@@ -39,6 +39,7 @@ const create = asyncHandler(async (req, res) => {
   const role = new Role({
     roleName: req.body.roleName,
     description: req.body.description,
+    isActive: req.body.isActive,
   });
 
   const savedData = await role.save();
@@ -52,6 +53,7 @@ const update = asyncHandler(async (req, res) => {
   const role = await Role.findById(req.params.id);
   role.roleName = req.body.roleName;
   role.description = req.body.description;
+  role.isActive = req.body.isActive;
 
   const savedData = await role.save();
   res.status(200).json(savedData);

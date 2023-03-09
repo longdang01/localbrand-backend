@@ -8,8 +8,9 @@ const { ObjectId } = require("mongodb");
 // @access  Private
 const get = asyncHandler(async (req, res) => {
   const query = { isActive: 1 };
+  const roleQuery = { isActive: { $ne: -1 } };
   const staffs = await Staff.find(query).populate("user").populate("role");
-  const roles = await Role.find(query);
+  const roles = await Role.find(roleQuery);
 
   res.status(200).json({
     staffs: staffs,

@@ -29,5 +29,5 @@ app.use(errorHandler);
 
 //listen
 app.listen(port, () => {
-  console.log("Server is running...");
+  console.log(`Server is running with port: ${port}...`);
 });

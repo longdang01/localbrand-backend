@@ -2,3 +2,4 @@
 cloudinary
 maxlength
 newss
+vnpay
