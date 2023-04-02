@@ -1,98 +1,69 @@
 const asyncHandler = require("express-async-handler");
 const Orders = require("../models/Orders");
-const Customer = require("../models/Customer");
-const OrdersStatus = require("../models/OrdersStatus");
+const Product = require("../models/Product");
 const OrdersDetail = require("../models/OrdersDetail");
+const Color = require("../models/Color");
+const Size = require("../models/Size");
 const { ObjectId } = require("mongodb");
-const { createOrdersCode } = require("../utils/generate");
-const {
-  getPrice,
-  updateSize,
-  deleteCartDetail,
-} = require("../utils/handleData");
+const { generateCodeRandom } = require("../utils/Functions");
 
-const { sendMail } = require("../utils/mail");
-
-// @desc    GET orders
-// @route   GET /api/orders/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: { $ne: -1 } };
+  const query = { active: 1 };
   const sort = { createdAt: -1 };
-  const ordersList = await Orders.find(query)
-    .sort(sort)
-    .populate("payment")
-    .populate("transport")
-    .populate("customer")
-    .populate({
-      path: "deliveryAddress",
-      populate: [
-        {
-          path: "customer",
-          model: "Customer",
-        },
-      ],
-    })
-    .populate("ordersDetails")
-    .populate("ordersStatus");
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
-  res.status(200).json(ordersList);
+  const orderses = await Orders.find(query)
+    .sort(sort)
+    .populate("ordersDetails")
+    .populate("ordersStatuses");
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Orders.find(query).sort(sort).countDocuments();
+  const products = await Product.find(query);
+
+  // res.status(200).json({ orderses: orderses, count: count });
+  res.status(200).json({ orderses: orderses, products: products });
 });
 
-// @desc    POST orders
-// @route   POST /api/orders/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = {
-    $and: [{ customer: req.body.customer }, { isActive: { $ne: -1 } }],
-  };
   const sort = { createdAt: -1 };
-  const ordersList = await Orders.find(query)
-    .sort(sort)
-    .populate("payment")
-    .populate("transport")
-    .populate("customer")
-    .populate({
-      path: "deliveryAddress",
-      populate: [
-        {
-          path: "customer",
-          model: "Customer",
-        },
-      ],
-    })
-    .populate("ordersDetails")
-    .populate("ordersStatus");
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
-  res.status(200).json(ordersList);
+  const query = req.body.searchData
+    ? {
+        $and: [
+          // { categoryName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const orderses = await Orders.find(query)
+    .sort(sort)
+    .populate("ordersDetails")
+    .populate("ordersStatuses");
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Orders.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ orderses: orderses, count: count });
+  const products = await Product.find(query);
+
+  res.status(200).json({ orderses: orderses, products: products });
 });
 
-// @desc    Get orders
-// @route   GET /api/orders/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id) };
-  const orders = await Orders.findById(query)
-    .populate("payment")
-    .populate("transport")
-    .populate("customer")
-    .populate({
-      path: "deliveryAddress",
-      populate: [
-        {
-          path: "customer",
-          model: "Customer",
-        },
-      ],
-    })
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const orders = await Orders.findOne(query)
     .populate({
       path: "ordersDetails",
-      model: "OrdersDetail",
       populate: [
-        {
-          path: "orders",
-          model: "Orders",
-        },
         {
           path: "product",
           model: "Product",
@@ -107,168 +78,128 @@ const getById = asyncHandler(async (req, res) => {
         },
       ],
     })
-    .populate("ordersStatus");
+    .populate("ordersStatuses");
 
   res.status(200).json(orders);
 });
 
-// @desc    POST orders
-// @route   POST /api/orders
-// @access  Private
-// purchase
-
 const create = asyncHandler(async (req, res) => {
-  if (!req.body.note) req.body.note = null;
-  const code = await createOrdersCode();
+  // details
+  const query = { active: 1 };
+  const orderses = (await Orders.find(query)) || [];
+
+  const ordersCode = await generateCodeRandom("OD", orderses, "ordersCode", 5);
+
   const orders = new Orders({
-    payment: req.body.payment,
-    transport: req.body.transport,
-    customer: req.body.customer,
-    deliveryAddress: req.body.deliveryAddress,
-    ordersCode: code,
-    orderDate: new Date().toISOString().slice(0, 10),
+    customer: req.body.customer || null,
+    deliveryAddress: req.body.deliveryAddress || null,
+    ordersCode: ordersCode,
     note: req.body.note,
-    total: req.body.total,
-    status: 0,
-    paid: req.body.isPaid ? 1 : 0,
+    status: Number(req.body.status),
+    payment: Number(req.body.payment),
+    total: Number(req.body.total),
+    paid: Number(req.body.paid),
+  });
+
+  const details = req.body.details;
+  details.forEach(async (item) => {
+    const ordersDetail = new OrdersDetail({
+      orders: orders._id,
+      product: item.product._id,
+      color: item.color._id,
+      size: item.size._id,
+      price: Number(item.price),
+      quantity: Number(item.quantity),
+    });
+    const savedOrdersDetail = await ordersDetail.save();
+
+    // update quantity (size)
+    const size = await Size.findOne({
+      $and: [{ active: 1 }, { _id: ObjectId(item.size._id) }],
+    });
+    size.quantity = Number(size.quantity) - Number(item.quantity);
+    await size.save();
+
+    // push
+    await orders.updateOne({
+      $push: { ordersDetails: savedOrdersDetail._id },
+    });
   });
 
   const savedData = await orders.save();
 
-  // add ordersDetails
-  let contentEmail = "";
-  const cartDetails = req.body.cartDetails;
-  for (let i = 0; i < cartDetails.length; i++) {
-    const ordersDetail = new OrdersDetail({
-      orders: savedData._id,
-      product: cartDetails[i].product._id,
-      color: cartDetails[i].color._id,
-      size: cartDetails[i].size._id,
-      price: await getPrice(cartDetails[i].color),
-      quantity: cartDetails[i].quantity,
-      note: null,
-      status: 0,
-    });
-
-    await updateSize(cartDetails[i], 1);
-
-    const savedOrdersDetail = await ordersDetail.save();
-    await savedData.updateOne({
-      $push: { ordersDetails: { $each: [savedOrdersDetail._id] } },
-    });
-
-    await deleteCartDetail(cartDetails[i]);
-
-    contentEmail += cartDetails[i].product.productName + "\n";
-  }
-
-  const customer = await Customer.findById(req.body.customer);
-  console.log(customer.email);
-  await sendMail(
-    customer.email,
-    `[FRAGILE ORDERS]: Đặt hàng thành công ngày ${savedData.orderDate}`,
-    `Danh sách sản phẩm đặt bao gồm: \n${contentEmail}`
-  );
-
-  res.status(200).json(
-    await Orders.findById(savedData._id)
-      .populate("payment")
-      .populate("transport")
-      .populate("customer")
-      .populate({
-        path: "deliveryAddress",
-        populate: [
-          {
-            path: "customer",
-            model: "Customer",
-          },
-        ],
-      })
-      .populate("ordersDetails")
-      .populate("ordersStatus")
-  );
+  // const res1 = await Orders.findById(savedData._id).populate("ordersDetails");
+  // res.status(200).json(res1);
+  res
+    .status(200)
+    .json(
+      await Orders.findById(savedData._id)
+        .populate("ordersDetails")
+        .populate("ordersStatuses")
+    );
 });
 
-// @desc    PUT orders
-// @route   PUT /api/orders/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const orders = await Orders.findById(req.params.id);
+  const orders = await Orders.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
 
-  // req.body.action 0: cancel, 1: purchase, revert
-  if (orders.status == 4 && req.body.status != 4) {
-    req.body.action = 1;
-  }
-
-  if (orders.status != 4 && req.body.status == 4) {
-    req.body.action = 0;
-  }
-
-  orders.payment = req.body.payment;
-  orders.transport = req.body.transport;
   orders.customer = req.body.customer;
   orders.deliveryAddress = req.body.deliveryAddress;
   orders.ordersCode = req.body.ordersCode;
-  orders.orderDate = req.body.orderDate.slice(0, 10);
   orders.note = req.body.note;
   orders.total = req.body.total;
   orders.status = req.body.status;
+  orders.payment = req.body.payment;
   orders.paid = req.body.paid;
 
-  let listOrdersDetails = req.body.ordersDetails;
-  for (let i = 0; i < listOrdersDetails.length; i++) {
-    await updateSize(listOrdersDetails[i], req.body.action);
-  }
-
   const savedData = await orders.save();
-  res.status(200).json(
-    await Orders.findById(savedData._id)
-      .populate("payment")
-      .populate("transport")
-      .populate("customer")
-      .populate({
-        path: "deliveryAddress",
-        populate: [
-          {
-            path: "customer",
-            model: "Customer",
-          },
-        ],
-      })
-      .populate("ordersDetails")
-      .populate("ordersStatus")
-  );
+  res
+    .status(200)
+    .json(
+      await Orders.findById(savedData._id)
+        .populate("ordersDetails")
+        .populate("ordersStatuses")
+    );
 });
 
-// @desc    DELETE orders
-// @route   DELETE /api/orders/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const orders = await Orders.findById(req.params.id);
-  orders.isActive = -1;
+  const orders = await Orders.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  })
+    .populate({
+      path: "ordersDetails",
+      populate: [
+        {
+          path: "product",
+          model: "Product",
+        },
+        {
+          path: "color",
+          model: "Color",
+        },
+        {
+          path: "size",
+          model: "Size",
+        },
+      ],
+    })
+    .populate("ordersStatuses");
 
-  await OrdersStatus.updateMany({ orders: req.params.id }, { orders: null });
-  await OrdersDetail.updateMany({ orders: req.params.id }, { orders: null });
+  // orders.ordersDetails.forEach(async (item) => {
 
-  //remove orders of Customer { orders[]} ?
+  //   const size = await Size.findOne({
+  //     $and: [{ active: 1 }, { _id: ObjectId(item.size._id) }],
+  //   });
+  //   size.quantity = Number(size.quantity) + Number(item.quantity);
+  //   await size.save();
+  // });
+
+  orders.active = -1;
   const savedData = await orders.save();
-  res.status(200).json(
-    await Orders.findById(savedData._id)
-      .populate("payment")
-      .populate("transport")
-      .populate("customer")
-      .populate({
-        path: "deliveryAddress",
-        populate: [
-          {
-            path: "customer",
-            model: "Customer",
-          },
-        ],
-      })
-      .populate("ordersDetails")
-      .populate("ordersStatus")
-  );
+  await OrdersDetail.updateMany({ orders: req.params.id }, { active: -1 });
+
+  res.status(200).json(savedData);
 });
 
 module.exports = {

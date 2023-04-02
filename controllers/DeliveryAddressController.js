@@ -2,91 +2,84 @@ const asyncHandler = require("express-async-handler");
 const DeliveryAddress = require("../models/DeliveryAddress");
 const { ObjectId } = require("mongodb");
 
-// @desc    GET deliveryAddress
-// @route   GET /api/deliveryAddress/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: { $ne: -1 } };
-  const sort = { createdAt: -1 };
+  const query = { active: 1 };
+  const sort = { createdAt: 1 };
 
-  const deliveryAddressList = await DeliveryAddress.find(query).sort(sort);
+  const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
 
-  res.status(200).json(deliveryAddressList);
+  res.status(200).json(deliveryAddresses);
 });
 
-// @desc    POST deliveryAddress
-// @route   POST /api/deliveryAddress/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = {
-    $and: [{ customer: req.body.customer }, { isActive: { $ne: -1 } }],
-  };
-  const sort = { createdAt: -1 };
-  const deliveryAddressList = await DeliveryAddress.find(query).sort(sort);
+  const sort = { createdAt: 1 };
 
-  res.status(200).json(deliveryAddressList);
+  const query = req.body.searchData
+    ? {
+        $and: [
+          {
+            deliveryAddressName: { $regex: req.body.searchData, $options: "i" },
+          },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
+  res.status(200).json(deliveryAddresses);
 });
 
-// @desc    Get deliveryAddress
-// @route   GET /api/deliveryAddress/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id) };
-  const deliveryAddress = await DeliveryAddress.findById(query);
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const deliveryAddress = await DeliveryAddress.findOne(query);
 
   res.status(200).json(deliveryAddress);
 });
 
-// @desc    POST deliveryAddress
-// @route   POST /api/deliveryAddress
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   if (req.body.isActive == 1) {
-    await DeliveryAddress.updateMany(
-      { isActive: 1 },
-      { $set: { isActive: 0 } }
-    );
+    await DeliveryAddress.updateMany({ active: 1 }, { $set: { active: 0 } });
   }
+
   const deliveryAddress = new DeliveryAddress({
     customer: req.body.customer,
     deliveryAddressName: req.body.deliveryAddressName,
     consigneeName: req.body.consigneeName,
     consigneePhone: req.body.consigneePhone,
-    isActive: req.body.isActive,
+    active: req.body.active,
   });
 
   const savedData = await deliveryAddress.save();
-  res.status(200).json(savedData);
+
+  res.status(200).json(await DeliveryAddress.findById(savedData._id));
 });
 
-// @desc    PUT deliveryAddress
-// @route   PUT /api/deliveryAddress/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const deliveryAddress = await DeliveryAddress.findById(req.params.id);
+  const deliveryAddress = await DeliveryAddress.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
   deliveryAddress.customer = req.body.customer;
   deliveryAddress.deliveryAddressName = req.body.deliveryAddressName;
   deliveryAddress.consigneeName = req.body.consigneeName;
   deliveryAddress.consigneePhone = req.body.consigneePhone;
-  deliveryAddress.isActive = req.body.isActive;
+  deliveryAddress.active = req.body.active;
 
-  if (deliveryAddress.isActive == 1) {
-    await DeliveryAddress.updateMany(
-      { isActive: 1 },
-      { $set: { isActive: 0 } }
-    );
+  if (deliveryAddress.active == 1) {
+    await DeliveryAddress.updateMany({ active: 1 }, { $set: { active: 0 } });
   }
 
   const savedData = await deliveryAddress.save();
-  res.status(200).json(savedData);
+  res.status(200).json(await DeliveryAddress.findById(savedData._id));
 });
 
-// @desc    DELETE deliveryAddress
-// @route   DELETE /api/deliveryAddress/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const deliveryAddress = await DeliveryAddress.findById(req.params.id);
-  deliveryAddress.isActive = -1;
+  const deliveryAddress = await DeliveryAddress.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
+  deliveryAddress.active = -1;
 
   const savedData = await deliveryAddress.save();
   res.status(200).json(savedData);

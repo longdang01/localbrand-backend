@@ -7,11 +7,6 @@ const staffSchema = mongoose.Schema(
       required: true,
       ref: "User",
     },
-    role: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "Role",
-    },
     staffName: {
       type: String,
       required: true,
@@ -32,11 +27,7 @@ const staffSchema = mongoose.Schema(
       minlength: 10,
       maxlength: 10,
     },
-    email: {
-      type: String,
-      required: true,
-    },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

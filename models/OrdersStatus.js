@@ -15,7 +15,7 @@ const ordersStatusSchema = mongoose.Schema(
       type: Date,
       required: true,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

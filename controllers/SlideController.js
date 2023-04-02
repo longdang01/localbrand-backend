@@ -1,74 +1,83 @@
 const asyncHandler = require("express-async-handler");
 const Slide = require("../models/Slide");
 const { ObjectId } = require("mongodb");
+const { handleRemoveFile } = require("../utils/File");
 
-// @desc    GET slides
-// @route   GET /api/slides/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { active: 1 };
   const sort = { createdAt: -1 };
   const slides = await Slide.find(query).sort(sort);
 
   res.status(200).json(slides);
 });
 
-// @desc    POST slides
-// @route   POST /api/slides/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
   const sort = { createdAt: -1 };
+
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { slideName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
   const slides = await Slide.find(query).sort(sort);
 
   res.status(200).json(slides);
 });
 
-// @desc    Get slides
-// @route   GET /api/slides/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
-  const slide = await Slide.findById(query);
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const slide = await Slide.findOne(query);
 
   res.status(200).json(slide);
 });
 
-// @desc    POST slides
-// @route   POST /api/slides
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   const slide = new Slide({
-    picture: req.body.picture,
     slideName: req.body.slideName,
-    description: req.body.description,
+    picture: req.body.picture,
+    redirectLink: req.body.redirectLink || "",
+    description: req.body.description || "",
   });
 
   const savedData = await slide.save();
-  res.status(200).json(savedData);
+  res.status(200).json(await Slide.findById(savedData._id));
 });
 
-// @desc    PUT slides
-// @route   PUT /api/slides/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const slide = await Slide.findById(req.params.id);
-  slide.picture = req.body.picture;
+  const slide = await Slide.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
+  // remove image
+  if (slide.picture !== req.body.picture) {
+    await handleRemoveFile(slide.picture);
+  }
+
   slide.slideName = req.body.slideName;
+  slide.picture = req.body.picture;
+  slide.redirectLink = req.body.redirectLink;
   slide.description = req.body.description;
 
   const savedData = await slide.save();
-  res.status(200).json(savedData);
+  res.status(200).json(await Slide.findById(savedData._id));
 });
 
-// @desc    DELETE slides
-// @route   DELETE /api/slides/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const slide = await Slide.findById(req.params.id);
-  slide.isActive = -1;
+  const slide = await Slide.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
 
+  if (slide.picture) await handleRemoveFile(slide.picture);
+
+  slide.active = -1;
   const savedData = await slide.save();
+
   res.status(200).json(savedData);
 });
 

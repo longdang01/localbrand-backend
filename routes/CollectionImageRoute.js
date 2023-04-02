@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+// const { protect } = require("../middleware/authMiddleware");
 
 const {
   get,
@@ -8,9 +9,8 @@ const {
   create,
   update,
   remove,
-} = require("../controllers/OrdersStatusController");
+} = require("../controllers/CollectionImageController");
 
-//list api
 router.post("/search", search);
 router.route("/").get(get).post(create);
 router.route("/:id").get(getById).put(update).delete(remove);

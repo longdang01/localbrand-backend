@@ -2,13 +2,12 @@ const mongoose = require("mongoose");
 
 const supplierSchema = mongoose.Schema(
   {
-    picture: {
-      type: String,
-      // required: true,
-    },
     supplierName: {
       type: String,
       required: true,
+    },
+    picture: {
+      type: String,
     },
     address: {
       type: String,
@@ -27,7 +26,7 @@ const supplierSchema = mongoose.Schema(
     description: {
       type: String,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

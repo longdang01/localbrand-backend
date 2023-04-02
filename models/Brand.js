@@ -6,10 +6,13 @@ const brandSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    picture: {
+      type: String,
+    },
     description: {
       type: String,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

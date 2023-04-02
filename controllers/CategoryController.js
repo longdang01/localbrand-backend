@@ -1,72 +1,132 @@
 const asyncHandler = require("express-async-handler");
 const Category = require("../models/Category");
-const Supplier = require("../models/Supplier");
+const SubCategory = require("../models/SubCategory");
 const { ObjectId } = require("mongodb");
+const { handleRemoveFile } = require("../utils/File");
 
-// @desc    GET categories
-// @route   GET /api/categories/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const categories = await Category.find(query).populate("subCategories");
+  const query = { active: 1 };
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
+  const categories = await Category.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Category.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ categories: categories, count: count });
   res.status(200).json(categories);
 });
 
-// @desc    POST categories
-// @route   POST /api/categories/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const categories = await Category.find(query).populate("subCategories");
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { categoryName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const categories = await Category.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Category.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ categories: categories, count: count });
   res.status(200).json(categories);
 });
 
-// @desc    Get categories
-// @route   GET /api/categories/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
-  const category = await Category.findById(query).populate("subCategories");
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const category = await Category.findOne(query).populate("subCategories");
 
   res.status(200).json(category);
 });
 
-// @desc    POST categories
-// @route   POST /api/categories
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   const category = new Category({
     categoryName: req.body.categoryName,
-    description: req.body.description,
+    picture: req.body.picture || "",
+    path: req.body.path,
+    description: req.body.description || "",
   });
 
+  // Check if Category exists
+  const categoryExists = await Category.findOne({
+    path: req.body.path,
+    active: 1,
+  });
+
+  if (categoryExists) {
+    res.status(400);
+    throw new Error("Path đã tồn tại");
+  }
+
   const savedData = await category.save();
-  res.status(200).json(savedData);
+
+  res
+    .status(200)
+    .json(await Category.findById(savedData._id).populate("subCategories"));
 });
 
-// @desc    PUT categories
-// @route   PUT /api/categories/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const category = await Category.findById(req.params.id);
+  const category = await Category.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
+  // remove image
+  if (category.picture !== req.body.picture) {
+    await handleRemoveFile(category.picture);
+  }
+
   category.categoryName = req.body.categoryName;
+  category.picture = req.body.picture;
+  category.path = req.body.path;
   category.description = req.body.description;
 
+  if (category.path != req.body.path) {
+    // Check if Category exists
+    const categoryExists = await Category.findOne({
+      path: req.body.path,
+      active: 1,
+    });
+
+    if (categoryExists) {
+      res.status(400);
+      throw new Error("Path already exists");
+    }
+  }
+
   const savedData = await category.save();
-  res.status(200).json(savedData);
+  res
+    .status(200)
+    .json(await Category.findById(savedData._id).populate("subCategories"));
 });
 
-// @desc    DELETE categories
-// @route   DELETE /api/categories/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const category = await Category.findById(req.params.id);
-  category.isActive = -1;
+  const category = await Category.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  }).populate("subCategories");
 
-  SubCategory.updateMany({ category: req.params.id }, { category: null });
+  if (category.picture) await handleRemoveFile(category.picture);
+
+  category.active = -1;
   const savedData = await category.save();
+
+  // subCategory
+
+  // await SubCategory.updateMany({ category: req.params.id }, { category: null });
+  await SubCategory.updateMany({ category: req.params.id }, { active: -1 });
   res.status(200).json(savedData);
 });
 

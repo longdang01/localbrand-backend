@@ -15,10 +15,13 @@ const upload = multer({
 });
 
 const uploadToCloudinary = asyncHandler(async (fileString, format) => {
-  const { uploader } = cloudinary;
-
-  const res = await uploader.upload(
-    `data:image/${format};base64,${fileString}`
+  // const { uploader } = cloudinary;
+  const res = await cloudinary.v2.uploader.upload(
+    `data:image/${format};base64,${fileString}`,
+    {
+      folder: "fragile",
+      use_filename: true,
+    }
   );
 
   return res;

@@ -30,14 +30,7 @@ const ordersDetailSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
-    note: {
-      type: String,
-    },
-    status: {
-      type: Number,
-      required: true,
-    },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

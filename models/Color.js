@@ -21,7 +21,7 @@ const colorSchema = mongoose.Schema(
     },
     priceImport: {
       type: Number,
-      required: true,
+      // required: true,
     },
     sizes: [
       {
@@ -35,19 +35,11 @@ const colorSchema = mongoose.Schema(
         ref: "ColorImage",
       },
     ],
-    sales: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Discount",
-      },
-    ],
-    codes: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Discount",
-      },
-    ],
-    isActive: {
+    discount: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Discount",
+    },
+    active: {
       type: Number,
       required: true,
       default: 1,

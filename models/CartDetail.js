@@ -25,7 +25,7 @@ const cartDetailSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
     },

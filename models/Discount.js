@@ -14,17 +14,15 @@ const discountSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
+    // 1: %, 2: K
     symbol: {
-      type: String,
-      required: true,
-    },
-    amount: {
       type: Number,
       required: true,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
+      default: 1,
     },
   },
   {

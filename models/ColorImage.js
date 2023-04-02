@@ -10,7 +10,7 @@ const colorImageSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

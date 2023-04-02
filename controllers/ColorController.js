@@ -1,117 +1,146 @@
 const asyncHandler = require("express-async-handler");
 const Color = require("../models/Color");
-const Product = require("../models/Product");
+const { ObjectId } = require("mongodb");
 const Size = require("../models/Size");
 const ColorImage = require("../models/ColorImage");
 const Discount = require("../models/Discount");
-const Price = require("../models/Price");
-const { ObjectId } = require("mongodb");
+const Product = require("../models/Product");
 
-// @desc    GET colors
-// @route   GET /api/colors/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  // await Color.updateMany({ isActive: 0 }, { $set: { isActive: 1 } });
-  // res.status(200).json("success");
+  const query = { active: 1 };
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
-  // await Size.updateMany({ isActive: 1 }, { $set: { isActive: 0 } });
-  // res.status(200).json("success");
-
-  const query = { isActive: { $ne: -1 } };
   const colors = await Color.find(query)
+    .sort(sort)
     .populate("product")
     .populate("sizes")
     .populate("images")
-    .populate("sales")
-    .populate("codes");
+    .populate("discount");
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
 
+  // const count = await Color.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ colors: colors, count: count });
   res.status(200).json(colors);
 });
 
-// @desc    POST colors
-// @route   POST /api/colors/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: { $ne: -1 } };
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
+
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { colorName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
   const colors = await Color.find(query)
+    .sort(sort)
     .populate("product")
     .populate("sizes")
     .populate("images")
-    .populate("sales")
-    .populate("codes");
+    .populate("discount");
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
 
+  // const count = await Color.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ colors: colors, count: count });
   res.status(200).json(colors);
 });
 
-// @desc    Get colors
-// @route   GET /api/colors/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id) };
-  const color = await Color.findById(query)
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const color = await Color.findOne(query)
     .populate("product")
     .populate("sizes")
     .populate("images")
-    .populate("sales")
-    .populate("codes");
+    .populate("discount");
 
   res.status(200).json(color);
 });
 
-// @desc    POST colors
-// @route   POST /api/colors
-// @access  Private
 const create = asyncHandler(async (req, res) => {
-  if (!req.body.price) req.body.price = null;
   const color = new Color({
     product: req.body.product,
     price: req.body.price,
-    priceImport: req.body.priceImport,
+    priceImport: req.body.priceImport || null,
     colorName: req.body.colorName,
     hex: req.body.hex,
   });
 
   const savedData = await color.save();
+
   const product = Product.findById(req.body.product);
   // await product.updateOne({ $push: { colors: savedData._id } });
   await product.updateOne({
     $push: { colors: { $each: [savedData._id], $position: 0 } },
   });
-  res.status(200).json(savedData);
+
+  res
+    .status(200)
+    .json(
+      await Color.findById(savedData._id)
+        .populate("product")
+        .populate("sizes")
+        .populate("images")
+        .populate("discount")
+    );
 });
 
-// @desc    PUT colors
-// @route   PUT /api/colors/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const color = await Color.findById(req.params.id);
+  const color = await Color.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
   color.product = req.body.product;
   color.price = req.body.price;
-  color.priceImport = req.body.priceImport;
+  color.priceImport = req.body.priceImport || null;
   color.colorName = req.body.colorName;
   color.hex = req.body.hex;
 
   const savedData = await color.save();
-  res.status(200).json(savedData);
+  res
+    .status(200)
+    .json(
+      await Color.findById(savedData._id)
+        .populate("product")
+        .populate("sizes")
+        .populate("images")
+        .populate("discount")
+    );
 });
 
-// @desc    DELETE colors
-// @route   DELETE /api/colors/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const color = await Color.findById(req.params.id);
-  color.isActive = -1;
+  const color = await Color.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  })
+    .populate("product")
+    .populate("sizes")
+    .populate("images")
+    .populate("discount");
 
-  Size.updateMany({ color: req.params.id }, { color: null });
-  ColorImage.updateMany({ color: req.params.id }, { color: null });
-  Discount.updateMany({ color: req.params.id }, { color: null });
-  Price.updateMany({ color: req.params.id }, { color: null });
+  color.active = -1;
+  const savedData = await color.save();
+
+  Size.updateMany({ color: req.params.id }, { active: -1 });
+  ColorImage.updateMany({ color: req.params.id }, { active: -1 });
+  Discount.updateMany({ color: req.params.id }, { active: -1 });
 
   await Product.updateMany(
     { colors: req.params.id },
     { $pull: { colors: req.params.id } }
   );
-  const savedData = await color.save();
+
   res.status(200).json(savedData);
 });
 

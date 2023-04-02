@@ -25,12 +25,9 @@ const customerSchema = mongoose.Schema(
       required: true,
       minlength: 10,
       maxlength: 10,
+      unique: true,
     },
-    email: {
-      type: String,
-      required: true,
-    },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

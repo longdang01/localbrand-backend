@@ -1,81 +1,97 @@
 const asyncHandler = require("express-async-handler");
 const Size = require("../models/Size");
-const Color = require("../models/Color");
 const { ObjectId } = require("mongodb");
+const Color = require("../models/Color");
 
-// @desc    GET sizes
-// @route   GET /api/sizes/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: { $ne: -1 } };
-  const sizes = await Size.find(query);
+  const query = { active: 1 };
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
+  const sizes = await Size.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Size.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ sizes: sizes, count: count });
   res.status(200).json(sizes);
 });
 
-// @desc    POST sizes
-// @route   POST /api/sizes/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: { $ne: -1 } };
-  const sizes = await Size.find(query);
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { sizeName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const sizes = await Size.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Size.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ sizes: sizes, count: count });
   res.status(200).json(sizes);
 });
 
-// @desc    Get sizes
-// @route   GET /api/sizes/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id) };
-  const size = await Size.findById(query);
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const size = await Size.findOne(query);
 
   res.status(200).json(size);
 });
 
-// @desc    POST sizes
-// @route   POST /api/sizes
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   const size = new Size({
     color: req.body.color,
     sizeName: req.body.sizeName,
     quantity: req.body.quantity,
-    isActive: req.body.isActive,
   });
 
   const savedData = await size.save();
-  const color = Color.findById(req.body.color);
+  const color = await Color.findById(req.body.color);
   await color.updateOne({ $push: { sizes: savedData._id } });
-  res.status(200).json(savedData);
+
+  res.status(200).json(await Size.findById(savedData._id));
 });
 
-// @desc    PUT sizes
-// @route   PUT /api/sizes/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const size = await Size.findById(req.params.id);
+  const size = await Size.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
   size.color = req.body.color;
   size.sizeName = req.body.sizeName;
   size.quantity = req.body.quantity;
-  size.isActive = req.body.isActive;
 
   const savedData = await size.save();
-  res.status(200).json(savedData);
+  res.status(200).json(await Size.findById(savedData._id));
 });
 
-// @desc    DELETE sizes
-// @route   DELETE /api/sizes/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const size = await Size.findById(req.params.id);
-  size.isActive = -1;
+  const size = await Size.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
 
+  size.active = -1;
   await Color.updateMany(
     { sizes: req.params.id },
     { $pull: { sizes: req.params.id } }
   );
+
   const savedData = await size.save();
+
   res.status(200).json(savedData);
 });
 

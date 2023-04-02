@@ -6,6 +6,13 @@ const categorySchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    picture: {
+      type: String,
+    },
+    path: {
+      type: String,
+      required: true,
+    },
     description: {
       type: String,
     },
@@ -15,7 +22,7 @@ const categorySchema = mongoose.Schema(
         ref: "SubCategory",
       },
     ],
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

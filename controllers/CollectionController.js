@@ -1,92 +1,138 @@
 const asyncHandler = require("express-async-handler");
 const Collection = require("../models/Collection");
-const Product = require("../models/Product");
-const { ObjectId } = require("mongodb");
 const CollectionImage = require("../models/CollectionImage");
+const { ObjectId } = require("mongodb");
 
-// @desc    GET collections
-// @route   GET /api/collections/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { active: 1 };
   const sort = { createdAt: -1 };
-  const collections = await Collection.find(query)
-    .sort(sort)
-    .populate("images")
-    .populate("products");
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
+  const collections = await Collection.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Collection.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ collections: collections, count: count });
   res.status(200).json(collections);
 });
 
-// @desc    POST collections
-// @route   POST /api/collections/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
   const sort = { createdAt: -1 };
-  const collections = await Collection.find(query)
-    .sort(sort)
-    .populate("images")
-    .populate("products");
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { collectionName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const collections = await Collection.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Collection.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ collections: collections, count: count });
   res.status(200).json(collections);
 });
 
-// @desc    Get collections
-// @route   GET /api/collections/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
-  const collection = await Collection.findById(query)
-    .populate("images")
-    .populate("products");
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const collection = await Collection.findOne(query).populate(
+    "collectionImages"
+  );
 
   res.status(200).json(collection);
 });
 
-// @desc    POST collections
-// @route   POST /api/collections
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   const collection = new Collection({
     collectionName: req.body.collectionName,
-    description: req.body.description,
+    path: req.body.path,
+    releaseDate: req.body.releaseDate || "",
+    description: req.body.description || "",
   });
 
+  // Check if Collection exists
+  const collectionExists = await Collection.findOne({
+    path: req.body.path,
+    active: 1,
+  });
+
+  // const collectionExists = await Collection.findOne({
+  //   $and: [{ path: req.body.path }, { active: 1 }],
+  // });
+
+  console.log(collectionExists);
+  if (collectionExists) {
+    res.status(400);
+    throw new Error("Path đã tồn tại");
+  }
+
   const savedData = await collection.save();
-  res.status(200).json(savedData);
+
+  res
+    .status(200)
+    .json(
+      await Collection.findById(savedData._id).populate("collectionImages")
+    );
 });
 
-// @desc    PUT collections
-// @route   PUT /api/collections/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const collection = await Collection.findById(req.params.id);
+  const collection = await Collection.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
   collection.collectionName = req.body.collectionName;
+  collection.path = req.body.path;
+  collection.releaseDate = req.body.releaseDate;
   collection.description = req.body.description;
 
+  if (collection.path != req.body.path) {
+    // Check if Collection exists
+    const collectionExists = await Collection.findOne({
+      path: req.body.path,
+      active: 1,
+    });
+
+    if (collectionExists) {
+      res.status(400);
+      throw new Error("Path already exists");
+    }
+  }
+
   const savedData = await collection.save();
-  res.status(200).json(savedData);
+  res
+    .status(200)
+    .json(
+      await Collection.findById(savedData._id).populate("collectionImages")
+    );
 });
 
-// @desc    DELETE collections
-// @route   DELETE /api/collections/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const collection = await Collection.findById(req.params.id);
-  collection.isActive = -1;
+  const collection = await Collection.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  }).populate("collectionImages");
 
-  await CollectionImage.updateMany(
-    { collectionInfo: req.params.id },
-    { collectionInfo: null }
-  );
-
-  await Product.updateMany(
-    { collectionInfo: req.params.id },
-    { collectionInfo: null }
-  );
-
+  collection.active = -1;
   const savedData = await collection.save();
+
+  // subCategory
+
+  // await CollectionImage.updateMany({ collection: req.params.id }, { collection: null });
+  await CollectionImage.updateMany(
+    { collection: req.params.id },
+    { active: -1 }
+  );
   res.status(200).json(savedData);
 });
 

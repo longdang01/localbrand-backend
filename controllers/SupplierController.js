@@ -2,82 +2,90 @@ const asyncHandler = require("express-async-handler");
 const Supplier = require("../models/Supplier");
 const Product = require("../models/Product");
 const { ObjectId } = require("mongodb");
+const { handleRemoveFile } = require("../utils/File");
 
-// @desc    GET suppliers
-// @route   GET /api/suppliers/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const sort = { createdAt: -1 };
+  const query = { active: 1 };
+  const sort = { createdAt: 1 };
+
   const suppliers = await Supplier.find(query).sort(sort);
 
   res.status(200).json(suppliers);
 });
 
-// @desc    POST suppliers
-// @route   POST /api/suppliers/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const sort = { createdAt: -1 };
-  const suppliers = await Supplier.find(query).sort(sort);
+  const sort = { createdAt: 1 };
 
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { supplierName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const suppliers = await Supplier.find(query).sort(sort);
   res.status(200).json(suppliers);
 });
 
-// @desc    Get suppliers
-// @route   GET /api/suppliers/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
-  const supplier = await Supplier.findById(query);
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const supplier = await Supplier.findOne(query);
 
   res.status(200).json(supplier);
 });
 
-// @desc    POST suppliers
-// @route   POST /api/suppliers
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   const supplier = new Supplier({
-    picture: req.body.picture,
     supplierName: req.body.supplierName,
+    picture: req.body.picture || "",
     address: req.body.address,
     phone: req.body.phone,
     email: req.body.email,
-    description: req.body.description,
+    description: req.body.description || "",
   });
 
   const savedData = await supplier.save();
-  res.status(200).json(savedData);
+
+  res.status(200).json(await Supplier.findById(savedData._id));
 });
 
-// @desc    PUT suppliers
-// @route   PUT /api/suppliers/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const supplier = await Supplier.findById(req.params.id);
-  supplier.picture = req.body.picture;
+  const supplier = await Supplier.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
+  // remove image
+  if (supplier.picture !== req.body.picture) {
+    await handleRemoveFile(supplier.picture);
+  }
+
   supplier.supplierName = req.body.supplierName;
+  supplier.picture = req.body.picture;
   supplier.address = req.body.address;
   supplier.phone = req.body.phone;
   supplier.email = req.body.email;
   supplier.description = req.body.description;
 
   const savedData = await supplier.save();
-  res.status(200).json(savedData);
+  res.status(200).json(await Supplier.findById(savedData._id));
 });
 
-// @desc    DELETE suppliers
-// @route   DELETE /api/suppliers/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const supplier = await Supplier.findById(req.params.id);
-  supplier.isActive = -1;
+  const supplier = await Supplier.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
 
-  await Product.updateMany({ supplier: req.params.id }, { supplier: null });
+  if (supplier.picture) await handleRemoveFile(supplier.picture);
 
+  supplier.active = -1;
+
+  await Product.updateMany({ supplier: req.params.id }, { active: -1 });
   const savedData = await supplier.save();
+
   res.status(200).json(savedData);
 });
 

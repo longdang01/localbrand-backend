@@ -6,22 +6,23 @@ const collectionSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    path: {
+      type: String,
+      required: true,
+    },
+    releaseDate: {
+      type: Date,
+    },
     description: {
       type: String,
     },
-    images: [
+    collectionImages: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "CollectionImage",
       },
     ],
-    products: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
-      },
-    ],
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

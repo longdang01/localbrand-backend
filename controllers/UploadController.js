@@ -1,5 +1,5 @@
 const { uploadToCloudinary } = require("../services/upload.service");
-const { bufferToDataURI } = require("../utils/file");
+const { bufferToDataURI } = require("../utils/File");
 const asyncHandler = require("express-async-handler");
 
 const uploadImage = asyncHandler(async (req, res) => {

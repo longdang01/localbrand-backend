@@ -21,7 +21,7 @@ const deliveryAddressSchema = mongoose.Schema(
       minlength: 10,
       maxlength: 10,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

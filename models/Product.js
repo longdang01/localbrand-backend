@@ -22,13 +22,11 @@ const productSchema = mongoose.Schema(
       required: true,
       ref: "Supplier",
     },
-    colors: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Color",
-      },
-    ],
     productName: {
+      type: String,
+      required: true,
+    },
+    path: {
       type: String,
       required: true,
     },
@@ -50,7 +48,13 @@ const productSchema = mongoose.Schema(
     description: {
       type: String,
     },
-    isActive: {
+    colors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Color",
+      },
+    ],
+    active: {
       type: Number,
       required: true,
       default: 1,

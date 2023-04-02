@@ -1,73 +1,84 @@
 const asyncHandler = require("express-async-handler");
-const { ObjectId } = require("mongodb");
 const Brand = require("../models/Brand");
 const Product = require("../models/Product");
+const { ObjectId } = require("mongodb");
+const { handleRemoveFile } = require("../utils/File");
 
-// @desc    GET brands
-// @route   GET /api/brands/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const sort = { createdAt: -1 };
+  const query = { active: 1 };
+  const sort = { createdAt: 1 };
+
   const brands = await Brand.find(query).sort(sort);
 
   res.status(200).json(brands);
 });
 
-// @desc    POST brands
-// @route   POST /api/brands/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const sort = { createdAt: -1 };
-  const brands = await Brand.find(query).sort(sort);
+  const sort = { createdAt: 1 };
 
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { brandName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const brands = await Brand.find(query).sort(sort);
   res.status(200).json(brands);
 });
 
-// @desc    Get brands
-// @route   GET /api/brands/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
-  const brand = await Brand.findById(query);
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const brand = await Brand.findOne(query);
 
   res.status(200).json(brand);
 });
 
-// @desc    POST brands
-// @route   POST /api/brands
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   const brand = new Brand({
     brandName: req.body.brandName,
-    description: req.body.description,
+    picture: req.body.picture || "",
+    description: req.body.description || "",
   });
 
   const savedData = await brand.save();
-  res.status(200).json(savedData);
+
+  res.status(200).json(await Brand.findById(savedData._id));
 });
 
-// @desc    PUT brands
-// @route   PUT /api/brands/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const brand = await Brand.findById(req.params.id);
+  const brand = await Brand.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
+  // remove image
+  if (brand.picture !== req.body.picture) {
+    await handleRemoveFile(brand.picture);
+  }
+
   brand.brandName = req.body.brandName;
+  brand.picture = req.body.picture;
   brand.description = req.body.description;
 
   const savedData = await brand.save();
-  res.status(200).json(savedData);
+  res.status(200).json(await Brand.findById(savedData._id));
 });
 
-// @desc    DELETE brands
-// @route   DELETE /api/brands/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const brand = await Brand.findById(req.params.id);
-  brand.isActive = -1;
+  const brand = await Brand.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
 
-  await Product.updateMany({ brand: req.params.id }, { brand: null });
+  if (brand.picture) await handleRemoveFile(brand.picture);
+
+  brand.active = -1;
+
+  await Product.updateMany({ brand: req.params.id }, { active: -1 });
+
   const savedData = await brand.save();
   res.status(200).json(savedData);
 });

@@ -1,105 +1,99 @@
 const asyncHandler = require("express-async-handler");
 const Staff = require("../models/Staff");
-const Role = require("../models/Role");
 const { ObjectId } = require("mongodb");
 
-// @desc    GET staffs
-// @route   GET /api/staffs/
-// @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const roleQuery = { isActive: { $ne: -1 } };
-  const staffs = await Staff.find(query).populate("user").populate("role");
-  const roles = await Role.find(roleQuery);
+  const query = { active: 1 };
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
-  res.status(200).json({
-    staffs: staffs,
-    roles: roles,
-  });
+  const staffs = await Staff.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Staff.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ staffs: staffs, count: count });
+  res.status(200).json(staffs);
 });
 
-// @desc    POST staffs
-// @route   POST /api/staffs/search
-// @access  Private
 const search = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
-  const staffs = await Staff.find(query).populate("user").populate("role");
-  const roles = await Role.find(query);
+  const sort = { createdAt: 1 };
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
 
-  res.status(200).json({
-    staffs: staffs,
-    roles: roles,
-  });
+  const query = req.body.searchData
+    ? {
+        $and: [
+          { staffName: { $regex: req.body.searchData, $options: "i" } },
+          { active: 1 },
+        ],
+      }
+    : { active: 1 };
+
+  const staffs = await Staff.find(query).sort(sort);
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Staff.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ staffs: staffs, count: count });
+  res.status(200).json(staffs);
 });
 
-// @desc    Get staffs
-// @route   GET /api/staffs/:id
-// @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
-  const staff = await Staff.findById(query).populate("user").populate("role");
+  const query = {
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  };
+  const staff = await Staff.findOne(query);
 
   res.status(200).json(staff);
 });
 
-// @desc    POST staffs
-// @route   POST /api/staffs
-// @access  Private
 const create = asyncHandler(async (req, res) => {
   const staff = new Staff({
     user: req.body.user,
-    role: req.body.role,
     staffName: req.body.staffName,
-    picture: req.body.picture,
-    dob: req.body.dob,
-    address: req.body.address,
+    picture: req.body.picture || "",
+    dob: req.body.dob || "",
+    address: req.body.address || "",
     phone: req.body.phone,
-    email: req.body.email,
   });
 
   const savedData = await staff.save();
-  res
-    .status(200)
-    .json(
-      await Staff.findById(savedData._id).populate("user").populate("role")
-    );
+
+  res.status(200).json(await Staff.findById(savedData._id));
 });
 
-// @desc    PUT staffs
-// @route   PUT /api/staffs/:id
-// @access  Private
 const update = asyncHandler(async (req, res) => {
-  const staff = await Staff.findById(req.params.id);
+  const staff = await Staff.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
+
   staff.user = req.body.user;
-  staff.role = req.body.role;
   staff.staffName = req.body.staffName;
   staff.picture = req.body.picture;
   staff.dob = req.body.dob;
   staff.address = req.body.address;
   staff.phone = req.body.phone;
-  staff.email = req.body.email;
 
   const savedData = await staff.save();
-  res
-    .status(200)
-    .json(
-      await Staff.findById(savedData._id).populate("user").populate("role")
-    );
+  res.status(200).json(await Staff.findById(savedData._id));
 });
 
-// @desc    DELETE staffs
-// @route   DELETE /api/staffs/:id
-// @access  Private
 const remove = asyncHandler(async (req, res) => {
-  const staff = await Staff.findById(req.params.id);
-  staff.isActive = -1;
+  const staff = await Staff.findOne({
+    $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
+  });
 
+  staff.active = -1;
   const savedData = await staff.save();
-  res
-    .status(200)
-    .json(
-      await Staff.findById(savedData._id).populate("user").populate("role")
-    );
+
+  // subCategory
+  // await SubCategory.updateMany({ staff: req.params.id }, { staff: null });
+  await User.updateMany({ _id: savedData.user }, { active: -1 });
+  res.status(200).json(savedData);
 });
 
 module.exports = {

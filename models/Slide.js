@@ -2,18 +2,21 @@ const mongoose = require("mongoose");
 
 const slideSchema = mongoose.Schema(
   {
-    picture: {
-      type: String,
-      required: true,
-    },
     slideName: {
       type: String,
       required: true,
     },
+    picture: {
+      type: String,
+      required: true,
+    },
+    redirectLink: {
+      type: String,
+    },
     description: {
       type: String,
     },
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,
