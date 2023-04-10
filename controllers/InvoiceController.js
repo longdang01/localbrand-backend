@@ -34,7 +34,7 @@ const search = asyncHandler(async (req, res) => {
   const query = req.body.searchData
     ? {
         $and: [
-          // { categoryName: { $regex: req.body.searchData, $options: "i" } },
+          { invoiceCode: { $regex: req.body.searchData, $options: "i" } },
           { active: 1 },
         ],
       }

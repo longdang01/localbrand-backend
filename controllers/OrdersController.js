@@ -35,7 +35,7 @@ const search = asyncHandler(async (req, res) => {
   const query = req.body.searchData
     ? {
         $and: [
-          // { categoryName: { $regex: req.body.searchData, $options: "i" } },
+          { ordersCode: { $regex: req.body.searchData, $options: "i" } },
           { active: 1 },
         ],
       }
@@ -142,7 +142,25 @@ const create = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const orders = await Orders.findOne({
     $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
-  });
+  })
+    .populate({
+      path: "ordersDetails",
+      populate: [
+        {
+          path: "product",
+          model: "Product",
+        },
+        {
+          path: "color",
+          model: "Color",
+        },
+        {
+          path: "size",
+          model: "Size",
+        },
+      ],
+    })
+    .populate("ordersStatuses");
 
   orders.customer = req.body.customer;
   orders.deliveryAddress = req.body.deliveryAddress;
@@ -152,6 +170,16 @@ const update = asyncHandler(async (req, res) => {
   orders.status = req.body.status;
   orders.payment = req.body.payment;
   orders.paid = req.body.paid;
+
+  if (orders.status == 6) {
+    orders.ordersDetails.forEach(async (item) => {
+      const size = await Size.findOne({
+        $and: [{ active: 1 }, { _id: ObjectId(item.size._id) }],
+      });
+      size.quantity = Number(size.quantity) + Number(item.quantity);
+      await size.save();
+    });
+  }
 
   const savedData = await orders.save();
   res
@@ -186,14 +214,14 @@ const remove = asyncHandler(async (req, res) => {
     })
     .populate("ordersStatuses");
 
-  // orders.ordersDetails.forEach(async (item) => {
-
-  //   const size = await Size.findOne({
-  //     $and: [{ active: 1 }, { _id: ObjectId(item.size._id) }],
+  // if (orders.status >= 2 && orders.status <= 5)
+  //   orders.ordersDetails.forEach(async (item) => {
+  //     const size = await Size.findOne({
+  //       $and: [{ active: 1 }, { _id: ObjectId(item.size._id) }],
+  //     });
+  //     size.quantity = Number(size.quantity) + Number(item.quantity);
+  //     await size.save();
   //   });
-  //   size.quantity = Number(size.quantity) + Number(item.quantity);
-  //   await size.save();
-  // });
 
   orders.active = -1;
   const savedData = await orders.save();

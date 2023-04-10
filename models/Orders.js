@@ -26,9 +26,9 @@ const ordersSchema = mongoose.Schema(
      * 1: da giao & thanh cong
      * 2: cho xac nhan
      * 3: da xac nhan & dang chuan bi
-     * 3: da chuan bi & cho lay hang
-     * 4: dang giao
-     * 5: huy bo
+     * 4: da chuan bi & cho lay hang
+     * 5: dang giao
+     * 6: huy bo
      *
      *
      *

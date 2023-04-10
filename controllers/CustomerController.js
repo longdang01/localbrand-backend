@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Customer = require("../models/Customer");
+const User = require("../models/User");
 const { ObjectId } = require("mongodb");
 
 const get = asyncHandler(async (req, res) => {
@@ -46,7 +47,7 @@ const getById = asyncHandler(async (req, res) => {
   const query = {
     $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
   };
-  const customer = await Customer.findOne(query);
+  const customer = await Customer.findOne(query).populate("user");
 
   res.status(200).json(customer);
 });

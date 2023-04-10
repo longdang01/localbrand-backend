@@ -19,6 +19,8 @@ const register = asyncHandler(async (req, res) => {
     staffName,
     phone,
     address,
+    picture,
+    dob,
   } = req.body;
 
   if (!username || !password) {
@@ -50,7 +52,7 @@ const register = asyncHandler(async (req, res) => {
     username,
     password: hashedPassword,
     email,
-    role,
+    role: Number(role),
   });
 
   let customer;
@@ -60,6 +62,9 @@ const register = asyncHandler(async (req, res) => {
       user: user._id,
       customerName,
       phone,
+      address,
+      picture: picture || "",
+      dob: dob || "",
     });
   }
 
@@ -71,6 +76,8 @@ const register = asyncHandler(async (req, res) => {
       staffName,
       phone,
       address,
+      picture: picture || "",
+      dob: dob || "",
     });
   }
 

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 // const { protect } = require("../middleware/authMiddleware");
-const { protect, protectImport } = require("../middleware/authMiddleware");
+const { protect, protectMedia } = require("../middleware/authMiddleware");
 
 const {
   get,
@@ -10,14 +10,14 @@ const {
   create,
   update,
   remove,
-} = require("../controllers/CollectionImageController");
+} = require("../controllers/LookbookImageController");
 
 router.post("/search", search);
-router.route("/").get(get).post(protect, protectImport, create);
+router.route("/").get(get).post(protect, protectMedia, create);
 router
   .route("/:id")
   .get(getById)
-  .put(protect, protectImport, update)
-  .delete(protect, protectImport, remove);
+  .put(protect, protectMedia, update)
+  .delete(protect, protectMedia, remove);
 
 module.exports = router;

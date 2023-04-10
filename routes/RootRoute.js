@@ -32,6 +32,9 @@ const cartDetailRouter = require("./cartDetail");
 const staticsRouter = require("./statics");
 const importProductRouter = require("./importProduct");
 
+const lookbookRoute = require("./LookbookRoute");
+const lookbookImageRoute = require("./LookbookImageRoute");
+
 const uploadRouter = require("./UploadRoute");
 
 const useRoutes = (app) => {
@@ -68,6 +71,9 @@ const useRoutes = (app) => {
   app.use("/api/cartDetails", cartDetailRouter);
   app.use("/api/statics", staticsRouter);
   app.use("/api/importProducts", importProductRouter);
+
+  app.use("/api/lookbooks", lookbookRoute);
+  app.use("/api/lookbookImages", lookbookImageRoute);
 
   app.use("/api/upload", uploadRouter);
 };

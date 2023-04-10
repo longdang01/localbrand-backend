@@ -1,6 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const Staff = require("../models/Staff");
+const User = require("../models/User");
 const { ObjectId } = require("mongodb");
+const { handleRemoveFile } = require("../utils/File");
 
 const get = asyncHandler(async (req, res) => {
   const query = { active: 1 };
@@ -46,7 +48,7 @@ const getById = asyncHandler(async (req, res) => {
   const query = {
     $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
   };
-  const staff = await Staff.findOne(query);
+  const staff = await Staff.findOne(query).populate("user");
 
   res.status(200).json(staff);
 });
@@ -71,6 +73,11 @@ const update = asyncHandler(async (req, res) => {
     $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
   });
 
+  // remove image
+  if (staff.picture !== req.body.picture) {
+    await handleRemoveFile(staff.picture);
+  }
+
   staff.user = req.body.user;
   staff.staffName = req.body.staffName;
   staff.picture = req.body.picture;
@@ -86,6 +93,8 @@ const remove = asyncHandler(async (req, res) => {
   const staff = await Staff.findOne({
     $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
   });
+
+  if (staff.picture) await handleRemoveFile(staff.picture);
 
   staff.active = -1;
   const savedData = await staff.save();
