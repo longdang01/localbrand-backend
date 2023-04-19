@@ -23,6 +23,8 @@ const protect = asyncHandler(async (req, res, next) => {
           ? jwt.verify(token, process.env.SALES_JWT_SECRET)
           : req.headers.role == "4"
           ? jwt.verify(token, process.env.MEDIA_JWT_SECRET)
+          : req.headers.role == "5"
+          ? jwt.verify(token, process.env.CLIENT_JWT_SECRET)
           : null;
 
       // Get user from the token

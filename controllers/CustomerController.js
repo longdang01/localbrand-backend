@@ -71,6 +71,13 @@ const update = asyncHandler(async (req, res) => {
   const customer = await Customer.findOne({
     $and: [{ active: 1 }, { _id: ObjectId(req.params.id) }],
   });
+  if (req.body.email) {
+    const user = await User.findOne({
+      $and: [{ active: 1 }, { _id: customer.user }],
+    });
+    user.email = req.body.email;
+    await user.save();
+  }
 
   customer.user = req.body.user;
   customer.customerName = req.body.customerName;
@@ -80,7 +87,7 @@ const update = asyncHandler(async (req, res) => {
   customer.phone = req.body.phone;
 
   const savedData = await customer.save();
-  res.status(200).json(await Customer.findById(savedData._id));
+  res.status(200).json(await Customer.findById(savedData._id).populate("user"));
 });
 
 const remove = asyncHandler(async (req, res) => {

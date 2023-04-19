@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Product = require("../models/Product");
 const { ObjectId } = require("mongodb");
 const { handleRemoveFile } = require("../utils/File");
+const Category = require("../models/Category");
 const SubCategory = require("../models/SubCategory");
 const Brand = require("../models/Brand");
 const Supplier = require("../models/Supplier");
@@ -107,6 +108,160 @@ const search = asyncHandler(async (req, res) => {
     suppliers: suppliers,
     collections: collections,
   });
+});
+
+const getByClient = asyncHandler(async (req, res) => {
+  const sort = { createdAt: -1 };
+  const previous = req.body.previous;
+  const parentPath = req.body.parent;
+  const childPath = req.body.child;
+  const path = req.body.path;
+
+  if (previous) {
+    if (previous == "c") {
+      let products = await Product.find({ active: 1 })
+        .sort(sort)
+        .populate({
+          path: "subCategory",
+          populate: [
+            {
+              path: "category",
+              model: "Category",
+            },
+          ],
+        })
+        .populate({
+          path: "colors",
+          populate: [
+            {
+              path: "sizes",
+              model: "Size",
+            },
+            {
+              path: "images",
+              model: "ColorImage",
+            },
+            {
+              path: "discount",
+              model: "Discount",
+            },
+          ],
+        });
+
+      products = products.filter(
+        (prod) => prod.subCategory.category.path == parentPath
+      );
+
+      const category = await Category.findOne({ path: parentPath }).populate(
+        "subCategories"
+      );
+      res.status(200).json({ products: products, category: category });
+    }
+
+    if (previous == "s") {
+      let products = await Product.find({ active: 1 })
+        .sort(sort)
+        .populate({
+          path: "subCategory",
+          populate: [
+            {
+              path: "category",
+              model: "Category",
+            },
+          ],
+        })
+        .populate({
+          path: "colors",
+          populate: [
+            {
+              path: "sizes",
+              model: "Size",
+            },
+            {
+              path: "images",
+              model: "ColorImage",
+            },
+            {
+              path: "discount",
+              model: "Discount",
+            },
+          ],
+        });
+      products = products.filter((prod) => prod.subCategory.path == childPath);
+      const subCategory = await SubCategory.findOne({
+        path: childPath,
+      }).populate("category");
+      const category = await Category.findOne({ path: parentPath }).populate(
+        "subCategories"
+      );
+      res.status(200).json({
+        products: products,
+        category: category,
+        subCategory: subCategory,
+      });
+    }
+  }
+
+  if (!previous) {
+    const products = await Product.find({
+      $and: [{ path: path }, { active: 1 }],
+    })
+      .sort(sort)
+      .populate({
+        path: "subCategory",
+        populate: [
+          {
+            path: "category",
+            model: "Category",
+          },
+        ],
+      })
+      .populate({
+        path: "colors",
+        populate: [
+          {
+            path: "sizes",
+            model: "Size",
+          },
+          {
+            path: "images",
+            model: "ColorImage",
+          },
+          {
+            path: "discount",
+            model: "Discount",
+          },
+        ],
+      });
+    res.status(200).json({ products: products });
+  }
+});
+
+const getByPath = asyncHandler(async (req, res) => {
+  const query = {
+    $and: [{ active: 1 }, { path: req.body.path }],
+  };
+  const product = await Product.findOne(query)
+    .populate("subCategory")
+    .populate({
+      path: "colors",
+      populate: [
+        {
+          path: "sizes",
+          model: "Size",
+        },
+        {
+          path: "images",
+          model: "ColorImage",
+        },
+        {
+          path: "discount",
+          model: "Discount",
+        },
+      ],
+    });
+
+  res.status(200).json(product);
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -284,6 +439,8 @@ module.exports = {
   get,
   search,
   getById,
+  getByClient,
+  getByPath,
   create,
   update,
   remove,

@@ -39,7 +39,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const create = asyncHandler(async (req, res) => {
   const slide = new Slide({
-    slideName: req.body.slideName,
+    slideName: req.body.slideName || "",
     picture: req.body.picture,
     redirectLink: req.body.redirectLink || "",
     description: req.body.description || "",

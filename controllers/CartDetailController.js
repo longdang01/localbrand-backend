@@ -8,7 +8,7 @@ const CartDetail = require("../models/CartDetail");
 // @access  Private
 const get = asyncHandler(async (req, res) => {
   const query = {
-    $or: [{ isActive: 0 }, { isActive: 1 }],
+    $or: [{ active: 0 }, { active: 1 }],
   };
   const sort = { createdAt: -1 };
   const cartDetails = await CartDetail.find(query)
@@ -25,7 +25,7 @@ const get = asyncHandler(async (req, res) => {
 // @access  Private
 const search = asyncHandler(async (req, res) => {
   const query = {
-    $or: [{ isActive: 0 }, { isActive: 1 }],
+    $or: [{ active: 0 }, { active: 1 }],
   };
   const sort = { createdAt: -1 };
   const cartDetails = await CartDetail.find(query).sort(sort);
@@ -94,23 +94,34 @@ const getById = asyncHandler(async (req, res) => {
   res.status(200).json(cartDetail);
 });
 
+const getByVariant = asyncHandler(async (req, res) => {
+  // if customer not init cart => create new cart
+  const cart = await Cart.findOne({
+    $and: [{ customer: req.body.customer }, { active: 1 }],
+  });
+
+  const cartDetail = await CartDetail.findOne({
+    $and: [
+      { product: req.body.product },
+      { color: req.body.color },
+      { size: req.body.size },
+      { cart: cart._id },
+      { active: { $ne: -1 } },
+    ],
+  });
+
+  res.status(200).json(cartDetail);
+});
+
 // @desc    POST cartDetails
 // @route   POST /api/cartDetails
 // @access  Private
 // add to cart
 const create = asyncHandler(async (req, res) => {
   // if customer not init cart => create new cart
-  let checkExistsCart = await Cart.findOne({
-    $and: [{ customer: req.body.customer }, { isActive: 1 }],
+  const cart = await Cart.findOne({
+    $and: [{ customer: req.body.customer }, { active: 1 }],
   });
-
-  if (!checkExistsCart) {
-    const checkExistsCart = new Cart({
-      customer: req.body.customer,
-    });
-
-    checkExistsCart = await checkExistsCart.save();
-  }
 
   // check exists item in cart
   let cartDetail = await CartDetail.findOne({
@@ -118,8 +129,8 @@ const create = asyncHandler(async (req, res) => {
       { product: req.body.product },
       { color: req.body.color },
       { size: req.body.size },
-      { cart: checkExistsCart._id },
-      { isActive: { $ne: -1 } },
+      { cart: cart._id },
+      { active: { $ne: -1 } },
     ],
   });
 
@@ -129,21 +140,24 @@ const create = asyncHandler(async (req, res) => {
     cartDetail = new CartDetail();
   }
 
-  if (req.body.quantity > req.body.maxQuantity) {
-    res.status(400);
-    throw new Error("Số lượng trong giỏ hàng đã vượt quá");
-  }
-  const check = cartDetail ? true : false;
+  // if (req.body.quantity > req.body.maxQuantity) {
+  //   res.status(400);
+  //   throw new Error(
+  //     `Sản Phẩm Đã Có Trong Giỏ, Bạn Chỉ Được Chọn Thêm ${
+  //       Number(req.body.maxQuantity) - Number(cartDetail.quantity)
+  //     }`
+  //   );
+  // }
 
-  cartDetail.cart = checkExistsCart._id;
+  // check exists
+  const check = cartDetail ? true : false;
+  cartDetail.cart = cart._id;
   cartDetail.product = req.body.product;
   cartDetail.color = req.body.color;
   cartDetail.size = req.body.size;
   cartDetail.quantity = Number(req.body.quantity);
-  cartDetail.isActive = 0;
+  cartDetail.active = 2;
   const savedData = await cartDetail.save();
-
-  const cart = await Cart.findById(checkExistsCart._id);
 
   if (!check) {
     await cart.updateOne({
@@ -153,10 +167,6 @@ const create = asyncHandler(async (req, res) => {
 
   if (check) {
     await cart.updateOne({ $pull: { cartDetails: savedData._id } });
-    // await cart.updateMany(
-    //   { cartDetails: savedData._id },
-    //   { $pull: { cartDetails: savedData._id } }
-    // );
 
     await cart.updateOne({
       $push: { cartDetails: { $each: [savedData._id], $position: 0 } },
@@ -172,30 +182,30 @@ const create = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const cartDetail = await CartDetail.findById(req.params.id);
 
-  if (req.body.quantity > req.body.maxQuantity) {
-    res.status(400);
-    throw new Error("Số lượng trong giỏ hàng đã vượt quá");
-  }
+  // if (req.body.quantity > req.body.maxQuantity) {
+  //   res.status(400);
+  //   throw new Error("Số lượng trong giỏ hàng đã vượt quá");
+  // }
 
-  const check = req.body.cart.cartDetails.find(
-    (item) =>
-      item.product._id == req.body.product &&
-      item.color._id == req.body.color &&
-      item.size._id == req.body.size &&
-      item._id != cartDetail._id
-  );
+  // const check = req.body.cart.cartDetails.find(
+  //   (item) =>
+  //     item.product._id == req.body.product &&
+  //     item.color._id == req.body.color &&
+  //     item.size._id == req.body.size &&
+  //     item._id != cartDetail._id
+  // );
 
-  if (check) {
-    res.status(400);
-    throw new Error("Phân loại sản phẩm này đã có trong giỏ hàng");
-  }
+  // if (check) {
+  //   res.status(400);
+  //   throw new Error("Phân loại sản phẩm này đã có trong giỏ hàng");
+  // }
 
-  cartDetail.cart = req.body.cart._id;
+  cartDetail.cart = req.body.cart;
   cartDetail.product = req.body.product;
   cartDetail.color = req.body.color;
   cartDetail.size = req.body.size;
   cartDetail.quantity = req.body.quantity;
-  cartDetail.isActive = req.body.isActive;
+  cartDetail.active = req.body.active;
 
   const savedData = await cartDetail.save();
   res.status(200).json(
@@ -217,11 +227,7 @@ const update = asyncHandler(async (req, res) => {
                 model: "ColorImage",
               },
               {
-                path: "sales",
-                model: "Discount",
-              },
-              {
-                path: "codes",
+                path: "discount",
                 model: "Discount",
               },
             ],
@@ -242,11 +248,7 @@ const update = asyncHandler(async (req, res) => {
             model: "ColorImage",
           },
           {
-            path: "sales",
-            model: "Discount",
-          },
-          {
-            path: "codes",
+            path: "discount",
             model: "Discount",
           },
         ],
@@ -259,7 +261,7 @@ const update = asyncHandler(async (req, res) => {
 // @access  Private
 const remove = asyncHandler(async (req, res) => {
   const cartDetail = await CartDetail.findById(req.params.id);
-  cartDetail.isActive = -1;
+  cartDetail.active = -1;
 
   const cart = Cart.findById(cartDetail.cart);
   await cart.updateOne({ $pull: { cartDetails: req.params.id } });
@@ -276,6 +278,7 @@ module.exports = {
   get,
   search,
   getById,
+  getByVariant,
   create,
   update,
   remove,

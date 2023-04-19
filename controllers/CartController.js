@@ -7,7 +7,7 @@ const CartDetail = require("../models/CartDetail");
 // @route   GET /api/carts/
 // @access  Private
 const get = asyncHandler(async (req, res) => {
-  const query = { isActive: 1 };
+  const query = { active: 1 };
   const sort = { createdAt: -1 };
   const carts = await Cart.find(query)
     .sort(sort)
@@ -59,7 +59,7 @@ const get = asyncHandler(async (req, res) => {
 // @access  Private
 const search = asyncHandler(async (req, res) => {
   const query = {
-    $and: [{ customer: req.body.customer }, { isActive: 1 }],
+    $and: [{ customer: req.body.customer }, { active: 1 }],
   };
   const sort = { createdAt: -1 };
   const carts = await Cart.findOne(query)
@@ -80,11 +80,7 @@ const search = asyncHandler(async (req, res) => {
               model: "ColorImage",
             },
             {
-              path: "sales",
-              model: "Discount",
-            },
-            {
-              path: "codes",
+              path: "discount",
               model: "Discount",
             },
           ],
@@ -110,11 +106,7 @@ const search = asyncHandler(async (req, res) => {
                   model: "ColorImage",
                 },
                 {
-                  path: "sales",
-                  model: "Discount",
-                },
-                {
-                  path: "codes",
+                  path: "discount",
                   model: "Discount",
                 },
               ],
@@ -131,7 +123,7 @@ const search = asyncHandler(async (req, res) => {
 // @route   GET /api/carts/:id
 // @access  Private
 const getById = asyncHandler(async (req, res) => {
-  const query = { _id: ObjectId(req.params.id), isActive: 1 };
+  const query = { _id: ObjectId(req.params.id), active: 1 };
   const cart = await Cart.findById(query).populate("cartDetails");
 
   res.status(200).json(cart);
@@ -165,7 +157,7 @@ const update = asyncHandler(async (req, res) => {
 // @access  Private
 const remove = asyncHandler(async (req, res) => {
   const cart = await Cart.findById(req.params.id);
-  cart.isActive = -1;
+  cart.active = -1;
 
   CartDetail.updateMany({ cart: req.params.id }, { cart: null });
   const savedData = await cart.save();

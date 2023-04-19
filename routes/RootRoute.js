@@ -23,12 +23,13 @@ const ordersStatusRoute = require("./OrdersStatusRoute");
 const ordersDetailRoute = require("./OrdersDetailRoute");
 const deliveryAddressRoute = require("./DeliveryAddressRoute");
 
+const cartRoute = require("./CartRoute");
+const cartDetailRoute = require("./CartDetailRoute");
+
 const transportRouter = require("./transport");
 const paymentRouter = require("./payment");
 const newsRouter = require("./news");
 const roleRouter = require("./role");
-const cartRouter = require("./cart");
-const cartDetailRouter = require("./cartDetail");
 const staticsRouter = require("./statics");
 const importProductRouter = require("./importProduct");
 
@@ -63,12 +64,13 @@ const useRoutes = (app) => {
   app.use("/api/ordersStatuses", ordersStatusRoute);
   app.use("/api/deliveryAddresses", deliveryAddressRoute);
 
+  app.use("/api/carts", cartRoute);
+  app.use("/api/cartDetails", cartDetailRoute);
+
   app.use("/api/transports", transportRouter);
   app.use("/api/payments", paymentRouter);
   app.use("/api/news", newsRouter);
   app.use("/api/roles", roleRouter);
-  app.use("/api/carts", cartRouter);
-  app.use("/api/cartDetails", cartDetailRouter);
   app.use("/api/statics", staticsRouter);
   app.use("/api/importProducts", importProductRouter);
 

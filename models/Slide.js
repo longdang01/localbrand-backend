@@ -4,7 +4,7 @@ const slideSchema = mongoose.Schema(
   {
     slideName: {
       type: String,
-      required: true,
+      // required: true,
     },
     picture: {
       type: String,

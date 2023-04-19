@@ -13,7 +13,7 @@ const cartSchema = mongoose.Schema(
         ref: "CartDetail",
       },
     ],
-    isActive: {
+    active: {
       type: Number,
       required: true,
       default: 1,

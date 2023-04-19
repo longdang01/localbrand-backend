@@ -21,6 +21,20 @@ const deliveryAddressSchema = mongoose.Schema(
       minlength: 10,
       maxlength: 10,
     },
+    // 1: Viet Nam, !=1: other
+    country: {
+      type: String,
+      required: true,
+    },
+    province: {
+      type: String,
+    },
+    district: {
+      type: String,
+    },
+    ward: {
+      type: String,
+    },
     active: {
       type: Number,
       required: true,

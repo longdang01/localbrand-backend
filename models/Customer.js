@@ -27,6 +27,7 @@ const customerSchema = mongoose.Schema(
       maxlength: 10,
       unique: true,
     },
+
     active: {
       type: Number,
       required: true,
