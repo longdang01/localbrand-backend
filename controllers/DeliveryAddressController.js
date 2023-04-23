@@ -70,12 +70,10 @@ const create = asyncHandler(async (req, res) => {
   const query = { active: { $ne: -1 } };
 
   const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
-  res
-    .status(200)
-    .json({
-      data: await DeliveryAddress.findById(savedData._id),
-      deliveryAddresses: deliveryAddresses,
-    });
+  res.status(200).json({
+    data: await DeliveryAddress.findById(savedData._id),
+    deliveryAddresses: deliveryAddresses,
+  });
 });
 
 const update = asyncHandler(async (req, res) => {
@@ -83,7 +81,6 @@ const update = asyncHandler(async (req, res) => {
     $and: [{ active: { $ne: -1 } }, { _id: ObjectId(req.params.id) }],
   });
 
-  console.log(req.body.active);
   deliveryAddress.customer = req.body.customer;
   deliveryAddress.deliveryAddressName = req.body.deliveryAddressName;
   deliveryAddress.consigneeName = req.body.consigneeName;

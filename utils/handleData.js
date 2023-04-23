@@ -26,13 +26,10 @@ const updateSize = asyncHandler(async (cartDetail, action) => {
     } else {
       size.quantity = size.quantity - cartDetail.quantity;
     }
-    console.log(size.quantity);
   }
 
   if (action == 0) {
-    console.log(cartDetail.quantity);
     size.quantity = size.quantity + cartDetail.quantity;
-    console.log(size.quantity);
   }
 
   await size.save();

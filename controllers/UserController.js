@@ -122,9 +122,6 @@ const login = asyncHandler(async (req, res) => {
   // const { username, password, page } = req.body;
   const { page } = req.body;
   const { username, password } = req.body.user;
-  console.log(username);
-  console.log(password);
-  console.log(page);
 
   // Check for user username
   const user = await User.findOne({
@@ -136,6 +133,7 @@ const login = asyncHandler(async (req, res) => {
     const customer = await Customer.findOne(query);
     const staff = await Staff.findOne(query);
 
+    //page: 1=admin, 2=customer
     if (page == 1 && customer && user.role == 5) {
       res.status(400);
       throw new Error("Tài khoản không hợp lệ!");
@@ -148,11 +146,18 @@ const login = asyncHandler(async (req, res) => {
 
     const refreshToken = generateRefreshToken(user._id);
     refreshTokens.push(refreshToken);
+    // res.cookie("refresh_token", refreshToken, {
+    //   // httpOnly: true,
+    //   // secure: true,
+    //   // sameSite: "Strict", // or 'Lax', it depends
+    //   // maxAge: 604800000, // 7 days
+    //   path: "/",
+    //   sameSite: "strict",
+    // });
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "Strict", // or 'Lax', it depends
-      maxAge: 604800000, // 7 days
+      sameSite: "Strict",
+      secure: "false",
     });
 
     res.json({
@@ -161,7 +166,6 @@ const login = asyncHandler(async (req, res) => {
         username: user.username,
         token: generateToken(user._id, user.role),
         refresh_token: refreshToken,
-
         role: user.role,
       },
       customer: customer,
@@ -185,23 +189,77 @@ const refreshToken = asyncHandler(async (req, res) => {
     throw new Error("Invalid refresh token!");
   }
 
-  const user = await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+  const user = await User.findById(
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET).id
+  ).select("-password");
   if (!user) {
     res.status(403);
     throw new Error("Invalid refresh token!");
   }
 
-  const newAccessToken = generateToken(user);
-  const newRefreshToken = generateRefreshToken(user);
+  const newAccessToken = generateToken(user._id, user.role);
+  const newRefreshToken = generateRefreshToken(user._id);
   refreshTokens.push(newRefreshToken);
+  // res.cookie("refresh_token", newRefreshToken, {
+  //   // httpOnly: true,
+  //   // secure: true,
+  //   // sameSite: "Strict", // or 'Lax', it depends
+  //   // maxAge: 604800000, // 7 days
+  //   path: "/",
+  //   sameSite: "strict",
+  // });
+
   res.cookie("refresh_token", newRefreshToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: "Strict", // or 'Lax', it depends
-    maxAge: 604800000, // 7 days
+    sameSite: "Strict",
+    secure: "false",
+  });
+  res.status(200).json({ user: user, token: newAccessToken });
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  // old password, new password
+  const { oldPassword, newPassword, newPasswordConfirm } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    res.status(400);
+    throw new Error("Please add all fields");
+  }
+
+  if (newPassword !== newPasswordConfirm) {
+    res.status(400);
+    throw new Error("Nhập lại mật khẩu mới không đúng");
+  }
+
+  // Check for user username
+  const user = await User.findOne({
+    $and: [{ username: req.user.username }, { active: 1 }],
   });
 
-  res.status(200).json({ token: newAccessToken });
+  if (!(await bcrypt.compare(oldPassword, user.password))) {
+    res.status(400);
+    throw new Error("Mật khẩu cũ không đúng!");
+  }
+
+  if (await bcrypt.compare(newPassword, user.password)) {
+    res.status(400);
+    throw new Error("Mật khẩu cũ giống mật khẩu mới!");
+  }
+
+  // Hash password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  user.password = hashedPassword;
+  const savedData = await user.save();
+  if (savedData) {
+    res
+      .status(201)
+      .json({ message: "Đổi mật khẩu thành công, vui lòng đăng nhập lại!" });
+  } else {
+    res.status(400);
+    throw new Error("Invalid user data");
+  }
 });
 
 // @desc    Get user data
@@ -246,5 +304,6 @@ module.exports = {
   register,
   login,
   getMe,
+  changePassword,
   refreshToken,
 };

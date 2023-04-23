@@ -72,7 +72,6 @@ const create = asyncHandler(async (req, res) => {
   //   $and: [{ path: req.body.path }, { active: 1 }],
   // });
 
-  console.log(collectionExists);
   if (collectionExists) {
     res.status(400);
     throw new Error("Path đã tồn tại");

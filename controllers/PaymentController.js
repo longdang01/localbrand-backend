@@ -10,10 +10,8 @@ const { response } = require("express");
 // @access  Private
 const checkout = (req, res) => {
   const userAgent = req.headers["user-agent"];
-  console.log("userAgent", userAgent);
 
   const params = Object.assign({}, req.body);
-  console.log(req);
 
   const clientIp =
     req.headers["x-forwarded-for"] ||
