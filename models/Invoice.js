@@ -15,6 +15,10 @@ const invoiceSchema = mongoose.Schema(
     note: {
       type: String,
     },
+    transportFee: {
+      type: Number,
+      required: true,
+    },
     total: {
       type: Number,
       required: true,

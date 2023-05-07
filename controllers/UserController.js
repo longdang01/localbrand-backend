@@ -6,6 +6,9 @@ const Customer = require("../models/Customer");
 const Cart = require("../models/Cart");
 const Staff = require("../models/Staff");
 const { ObjectId } = require("mongodb");
+const { sendVerifyAccountMail } = require("../utils/Mail");
+const { sendResetPassword } = require("../utils/Mail");
+
 let refreshTokens = [];
 // @desc    Register new user
 // @route   POST /api/users
@@ -53,7 +56,7 @@ const register = asyncHandler(async (req, res) => {
 
   if (userExists) {
     res.status(400);
-    throw new Error("User already exists");
+    throw new Error("Tài khoản đã tồn tại");
   }
 
   // Hash password
@@ -66,10 +69,25 @@ const register = asyncHandler(async (req, res) => {
     password: hashedPassword,
     email,
     role: Number(role),
+    active: -1,
   });
 
   let customer;
   if (role == 5) {
+    const customerExists = await Customer.findOne({
+      $and: [
+        {
+          phone: phone,
+        },
+        { active: 1 },
+      ],
+    });
+
+    if (customerExists) {
+      res.status(400);
+      throw new Error("Tài khoản đã tồn tại");
+    }
+
     // Create customer
     customer = await Customer.create({
       user: user._id,
@@ -88,6 +106,19 @@ const register = asyncHandler(async (req, res) => {
 
   let staff;
   if (role >= 1 && role <= 4) {
+    const staffExists = await Staff.findOne({
+      $and: [
+        {
+          phone: phone,
+        },
+        { active: 1 },
+      ],
+    });
+
+    if (staffExists) {
+      res.status(400);
+      throw new Error("Tài khoản đã tồn tại");
+    }
     // Create staff
     staff = await Staff.create({
       user: user._id,
@@ -99,20 +130,105 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
+  const access_token = generateToken(user._id);
+
   if (user) {
+    console.log("register", user);
+    const dataSend = {
+      // link: `${process.env.BASE_URL}/api/users/verify/${user._id}/${access_token}`,
+      link: `http://localhost:3100/verify/${user._id}/${access_token}`,
+    };
+    await sendVerifyAccountMail(
+      user.email,
+      "[FRAGILE] Xác Minh Tài Khoản",
+      dataSend
+    );
+
     res.status(201).json({
       user: {
-        _id: user.id,
+        _id: user._id,
         username: user.username,
-        token: generateToken(user._id),
+        token: access_token,
       },
       customer: customer,
       staff: staff,
     });
   } else {
     res.status(400);
-    throw new Error("Invalid user data");
+    throw new Error("Dữ liệu không hợp lệ");
   }
+});
+
+const verifyAccount = asyncHandler(async (req, res) => {
+  const user = await User.findOne({ _id: req.body.id });
+  console.log(req.body);
+  console.log(user);
+  if (!user) {
+    res.status(400);
+    throw new Error("Đường dẫn không hợp lệ!");
+  }
+
+  const decoded = jwt.verify(req.body.token, process.env.CLIENT_JWT_SECRET);
+  const token = await User.findById(decoded.id).select("-password");
+
+  if (!token) {
+    res.status(400);
+    throw new Error("Đường dẫn không hợp lệ");
+  }
+
+  user.active = 1;
+  await user.save();
+  // await User.updateOne({ _id: user._id, active: 1 });
+  res.send("Email verified successfully");
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const user = await User.findOne({
+    $and: [{ email: req.body.email }, { active: 1 }],
+  });
+  if (!user) {
+    res.status(400);
+    throw new Error("Tài khoản chưa tồn tại");
+  }
+
+  const access_token = generateToken(user._id);
+
+  const dataSend = {
+    link: `http://localhost:3100/reset-password/${user._id}/${access_token}`,
+  };
+
+  await sendResetPassword(user.email, "Quên Mật Khẩu", dataSend);
+  res.send("password reset link sent to your email account");
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  // const user = await User.findById(req.params.id);
+  // const user = await User.findById(req.body.id);
+  if (!ObjectId.isValid(req.body.id)) {
+    res.status(400);
+    throw new Error("Đường dẫn không hợp lệ hoặc đã hết hạn!");
+  }
+
+  const user = await User.findOne({ _id: ObjectId(req.body.id) });
+
+  if (!user) {
+    res.status(400);
+    throw new Error("Đường dẫn không hợp lệ hoặc đã hết hạn!");
+  }
+  // return res.status(400).send("Đường dẫn không hợp lệ hoặc đã hết hạn");
+  const decoded = jwt.verify(req.body.token, process.env.CLIENT_JWT_SECRET);
+  const token = await User.findById(decoded.id).select("-password");
+
+  if (!token) return res.status(400).send("Đường dẫn không hợp lệ!");
+
+  // Hash password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(req.body.newPassword, salt);
+
+  user.password = hashedPassword;
+  await user.save();
+
+  res.send("password reset sucessfully.");
 });
 
 // @desc    Authenticate a user
@@ -125,7 +241,10 @@ const login = asyncHandler(async (req, res) => {
 
   // Check for user username
   const user = await User.findOne({
-    $and: [{ username: username }, { active: 1 }],
+    $or: [
+      { $and: [{ username: username }, { active: 1 }] },
+      { $and: [{ email: username }, { active: 1 }] },
+    ],
   });
 
   if (user && (await bcrypt.compare(password, user.password))) {
@@ -306,4 +425,7 @@ module.exports = {
   getMe,
   changePassword,
   refreshToken,
+  verifyAccount,
+  forgotPassword,
+  resetPassword,
 };

@@ -182,6 +182,7 @@ const create = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const cartDetail = await CartDetail.findById(req.params.id);
 
+  // console.log(req.body);
   // if (req.body.quantity > req.body.maxQuantity) {
   //   res.status(400);
   //   throw new Error("Số lượng trong giỏ hàng đã vượt quá");

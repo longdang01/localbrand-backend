@@ -6,12 +6,14 @@ const {
   get,
   search,
   getById,
+  getByPath,
   create,
   update,
   remove,
 } = require("../controllers/CollectionController");
 
 router.post("/search", search);
+router.post("/get-by-path", getByPath);
 router.route("/").get(get).post(protect, protectImport, create);
 router
   .route("/:id")

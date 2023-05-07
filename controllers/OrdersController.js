@@ -2,10 +2,15 @@ const asyncHandler = require("express-async-handler");
 const Orders = require("../models/Orders");
 const Product = require("../models/Product");
 const OrdersDetail = require("../models/OrdersDetail");
+const Cart = require("../models/Cart");
+const CartDetail = require("../models/CartDetail");
 const Color = require("../models/Color");
 const Size = require("../models/Size");
+const Customer = require("../models/Customer");
 const { ObjectId } = require("mongodb");
 const { generateCodeRandom } = require("../utils/Functions");
+const DeliveryAddress = require("../models/DeliveryAddress");
+const { sendAfterOrders } = require("../utils/Mail");
 
 const get = asyncHandler(async (req, res) => {
   const query = { active: 1 };
@@ -40,6 +45,89 @@ const search = asyncHandler(async (req, res) => {
         ],
       }
     : { active: 1 };
+
+  const orderses = await Orders.find(query)
+    .sort(sort)
+    .populate("deliveryAddress")
+    .populate({
+      path: "ordersDetails",
+      populate: [
+        {
+          path: "color",
+          model: "Color",
+          populate: [
+            {
+              path: "sizes",
+              model: "Size",
+            },
+            {
+              path: "images",
+              model: "ColorImage",
+            },
+            {
+              path: "discount",
+              model: "Discount",
+            },
+          ],
+        },
+        {
+          path: "size",
+          model: "Size",
+        },
+        {
+          path: "product",
+          model: "Product",
+          populate: [
+            {
+              path: "colors",
+              model: "Color",
+              populate: [
+                {
+                  path: "sizes",
+                  model: "Size",
+                },
+                {
+                  path: "images",
+                  model: "ColorImage",
+                },
+                {
+                  path: "discount",
+                  model: "Discount",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    .populate("ordersStatuses");
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  // const count = await Orders.find(query).sort(sort).countDocuments();
+
+  // res.status(200).json({ orderses: orderses, count: count });
+  const products = await Product.find(query);
+
+  res.status(200).json({ orderses: orderses, products: products });
+});
+
+const searchByClient = asyncHandler(async (req, res) => {
+  const sort = { createdAt: -1 };
+  // status,
+
+  // const page = Number(req.body.page) || 1;
+  // const pageSize = Number(req.body.pageSize);
+
+  const query = req.body.status
+    ? {
+        $and: [
+          { status: req.body.status },
+          { customer: req.body.customer },
+          { active: 1 },
+        ],
+      }
+    : { $and: [{ active: 1 }, { customer: req.body.customer }] };
 
   const orderses = await Orders.find(query)
     .sort(sort)
@@ -90,13 +178,26 @@ const create = asyncHandler(async (req, res) => {
 
   const ordersCode = await generateCodeRandom("OD", orderses, "ordersCode", 5);
 
+  let deliveryAddress = "";
+  if (req.body.customer) {
+    deliveryAddress = await DeliveryAddress.findOne({
+      $and: [{ active: 1 }, { customer: req.body.customer }],
+    });
+
+    if (!deliveryAddress) {
+      res.status(400);
+      throw new Error("Chưa có thông tin địa chỉ nhận hàng!");
+    }
+  }
+
   const orders = new Orders({
     customer: req.body.customer || null,
-    deliveryAddress: req.body.deliveryAddress || null,
+    deliveryAddress: deliveryAddress ? deliveryAddress._id : null,
     ordersCode: ordersCode,
     note: req.body.note,
     status: Number(req.body.status),
     payment: Number(req.body.payment),
+    transportFee: Number(req.body.transportFee),
     total: Number(req.body.total),
     paid: Number(req.body.paid),
   });
@@ -108,9 +209,19 @@ const create = asyncHandler(async (req, res) => {
       product: item.product._id,
       color: item.color._id,
       size: item.size._id,
-      price: Number(item.price),
+      price: item.color.discount
+        ? item.color.discount.symbol == 1
+          ? Math.round(
+              Number(item.color.price) *
+                ((100 - Number(item.color.discount.value)) / 100)
+            )
+          : Math.round(
+              Number(item.color.price) - Number(item.color.discount.value)
+            )
+        : Number(item.color.price),
       quantity: Number(item.quantity),
     });
+    // Number(item.price)
     const savedOrdersDetail = await ordersDetail.save();
 
     // update quantity (size)
@@ -124,10 +235,33 @@ const create = asyncHandler(async (req, res) => {
     await orders.updateOne({
       $push: { ordersDetails: savedOrdersDetail._id },
     });
+
+    if (req.body.customer) {
+      const cartDetail = await CartDetail.findById(item._id);
+      cartDetail.active = -1;
+      await cartDetail.save();
+
+      const cart = Cart.findById(item.cart);
+      await cart.updateOne({ $pull: { cartDetails: item._id } });
+    }
   });
 
   const savedData = await orders.save();
 
+  const dataSend = {
+    // link: `${process.env.BASE_URL}/api/users/verify/${user._id}/${access_token}`,
+    link: `http://localhost:3100/orders/${savedData.ordersCode}/`,
+  };
+  console.log(dataSend);
+  console.log(req.body.customer);
+  const customerSelect = await Customer.findOne({
+    $and: [{ active: 1 }, { _id: req.body.customer }],
+  }).populate("user");
+  await sendAfterOrders(
+    customerSelect.user.email,
+    "[FRAGILE] Thư Cảm Ơn Bạn Đã Đặt Hàng",
+    dataSend
+  );
   // const res1 = await Orders.findById(savedData._id).populate("ordersDetails");
   // res.status(200).json(res1);
   res
@@ -166,6 +300,7 @@ const update = asyncHandler(async (req, res) => {
   orders.deliveryAddress = req.body.deliveryAddress;
   orders.ordersCode = req.body.ordersCode;
   orders.note = req.body.note;
+  orders.transportFee = req.body.transportFee;
   orders.total = req.body.total;
   orders.status = req.body.status;
   orders.payment = req.body.payment;
@@ -182,6 +317,8 @@ const update = asyncHandler(async (req, res) => {
   }
 
   const savedData = await orders.save();
+  console.log(orders);
+
   res
     .status(200)
     .json(
@@ -233,6 +370,7 @@ const remove = asyncHandler(async (req, res) => {
 module.exports = {
   get,
   search,
+  searchByClient,
   getById,
   create,
   update,

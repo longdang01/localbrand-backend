@@ -26,6 +26,8 @@ const deliveryAddressRoute = require("./DeliveryAddressRoute");
 const cartRoute = require("./CartRoute");
 const cartDetailRoute = require("./CartDetailRoute");
 
+const vnPayRoute = require("./VnPayRoute");
+
 const transportRouter = require("./transport");
 const paymentRouter = require("./payment");
 const newsRouter = require("./news");
@@ -66,6 +68,8 @@ const useRoutes = (app) => {
 
   app.use("/api/carts", cartRoute);
   app.use("/api/cartDetails", cartDetailRoute);
+
+  app.use("/api/vnPays", vnPayRoute);
 
   app.use("/api/transports", transportRouter);
   app.use("/api/payments", paymentRouter);

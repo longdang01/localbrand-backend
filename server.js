@@ -22,6 +22,8 @@ app.use(
     origin: true,
   })
 );
+// app.use(cors())
+
 app.use(cookieParser());
 app.use(morgan("common"));
 

@@ -35,6 +35,7 @@ const deliveryAddressSchema = mongoose.Schema(
     ward: {
       type: String,
     },
+    //1: mac dinh, 2: khong mac dinh
     active: {
       type: Number,
       required: true,

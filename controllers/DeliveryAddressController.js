@@ -20,10 +20,11 @@ const search = asyncHandler(async (req, res) => {
           {
             deliveryAddressName: { $regex: req.body.searchData, $options: "i" },
           },
+          { customer: req.body.customer },
           { active: { $ne: -1 } },
         ],
       }
-    : { active: { $ne: -1 } };
+    : { $and: [{ customer: req.body.customer }, { active: { $ne: -1 } }] };
 
   const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
   res.status(200).json(deliveryAddresses);
@@ -49,9 +50,9 @@ const create = asyncHandler(async (req, res) => {
     consigneeName: req.body.consigneeName,
     consigneePhone: req.body.consigneePhone,
     country: req.body.country,
-    province: req.body.province,
-    district: req.body.district,
-    ward: req.body.ward,
+    province: req.body.province || "",
+    district: req.body.district || "",
+    ward: req.body.ward || "",
     active: req.body.active,
   });
 

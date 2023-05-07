@@ -1,43 +1,81 @@
-var nodemailer = require("nodemailer");
 const asyncHandler = require("express-async-handler");
+const nodemailer = require("nodemailer");
+const { templateVerifyAccount } = require("../templates/TemplateVerifyAccount");
+const { templateResetPassword } = require("../templates/TemplateResetPassword");
+const { templateAfterOrders } = require("../templates/TemplateAfterOrders");
 
-const option = {
-  service: "gmail",
-  auth: {
-    user: "jtf2407@gmail.com", // email hoặc username
-    pass: "kfhmlaenoslughkx", // password
-  },
-};
-
-var transporter = nodemailer.createTransport(option);
-const sendMail = asyncHandler(async (toEmail, subject, text) => {
-  transporter.verify(function (error, success) {
-    // Nếu có lỗi.
-    if (error) {
-      console.log(error);
-    } else {
-      //Nếu thành công.
-      console.log("Kết nối thành công!");
-      var mail = {
-        from: "jtf2407@gmail.com", // Địa chỉ email của người gửi
-        to: toEmail, // Địa chỉ email của người gửi
-        subject: subject, // Tiêu đề mail
-        text: text, // Nội dung mail dạng text
-      };
-
-      //Tiến hành gửi email
-      transporter.sendMail(mail, function (error, info) {
-        if (error) {
-          // nếu có lỗi
-          console.log(error);
-        } else {
-          //nếu thành công
-          console.log("Email sent: " + info.response);
-        }
-      });
-    }
+const sendVerifyAccountMail = asyncHandler(async (email, subject, data) => {
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    // service: process.env.SERVICE,
+    // port: 587,
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
   });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: subject,
+    html: templateVerifyAccount(data),
+  });
+
+  console.log("email sent sucessfully");
 });
+
+const sendResetPassword = asyncHandler(async (email, subject, data) => {
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    // service: process.env.SERVICE,
+    // port: 587,
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: subject,
+    html: templateResetPassword(data),
+  });
+
+  console.log("email sent sucessfully");
+});
+
+const sendAfterOrders = asyncHandler(async (email, subject, data) => {
+  console.log(1);
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    // service: process.env.SERVICE,
+    // port: 587,
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: subject,
+    html: templateAfterOrders(data),
+  });
+
+  console.log("email sent sucessfully");
+});
+
 module.exports = {
-  sendMail,
+  sendVerifyAccountMail,
+  sendResetPassword,
+  sendAfterOrders,
 };

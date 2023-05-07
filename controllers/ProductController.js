@@ -8,6 +8,7 @@ const Brand = require("../models/Brand");
 const Supplier = require("../models/Supplier");
 const Collection = require("../models/Collection");
 const Color = require("../models/Color");
+const Orders = require("../models/Orders");
 
 const get = asyncHandler(async (req, res) => {
   const query = { active: 1 };
@@ -54,6 +55,120 @@ const get = asyncHandler(async (req, res) => {
     suppliers: suppliers,
     collections: collections,
   });
+});
+
+const getBestSeller = asyncHandler(async (req, res) => {
+  const results = await Orders.find({
+    $and: [{ status: 1 }, { active: 1 }],
+  }).populate("ordersDetails");
+
+  let products = [];
+  results.forEach((item) => {
+    item.ordersDetails.forEach((item) => {
+      if (
+        products.findIndex((ele) => ele == item.product) == -1 &&
+        products.length < 8
+      ) {
+        products.push(item.product.toString());
+      }
+    });
+  });
+
+  let productBestSellers = [];
+  await Promise.all(
+    products.map(async (item) => {
+      let product = await Product.findOne({
+        $and: [{ _id: ObjectId(item) }, { active: 1 }],
+      })
+        .populate("subCategory")
+        .populate({
+          path: "colors",
+          populate: [
+            {
+              path: "sizes",
+              model: "Size",
+            },
+            {
+              path: "images",
+              model: "ColorImage",
+            },
+            {
+              path: "discount",
+              model: "Discount",
+            },
+          ],
+        });
+
+      productBestSellers.push(product);
+    })
+  );
+
+  res.status(200).json({ products: productBestSellers });
+});
+
+const getSale = asyncHandler(async (req, res) => {
+  const query = { active: 1 };
+  const sort = { createdAt: -1 };
+  const results = await Product.find(query)
+    .sort(sort)
+    .populate("subCategory")
+    .populate({
+      path: "colors",
+      populate: [
+        {
+          path: "sizes",
+          model: "Size",
+        },
+        {
+          path: "images",
+          model: "ColorImage",
+        },
+        {
+          path: "discount",
+          model: "Discount",
+        },
+      ],
+    });
+
+  let products = [];
+  results.forEach((item) => {
+    item.colors.forEach((item) => {
+      if (item.discount && products.length < 8) {
+        products.push(item.product);
+      }
+    });
+  });
+
+  let productSales = [];
+  await Promise.all(
+    products.map(async (item) => {
+      let product = await Product.findOne({
+        $and: [{ _id: item }, { active: 1 }],
+      })
+        .populate("subCategory")
+        .populate({
+          path: "colors",
+          populate: [
+            {
+              path: "sizes",
+              model: "Size",
+            },
+            {
+              path: "images",
+              model: "ColorImage",
+            },
+            {
+              path: "discount",
+              model: "Discount",
+            },
+          ],
+        });
+
+      productSales.push(product);
+    })
+  );
+
+  res.status(200).json({ products: productSales });
 });
 
 const search = asyncHandler(async (req, res) => {
@@ -438,6 +553,8 @@ const remove = asyncHandler(async (req, res) => {
 module.exports = {
   get,
   search,
+  getBestSeller,
+  getSale,
   getById,
   getByClient,
   getByPath,

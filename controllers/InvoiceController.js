@@ -90,6 +90,7 @@ const create = asyncHandler(async (req, res) => {
     staff: req.body.staff,
     invoiceCode: invoiceCode,
     note: req.body.note,
+    transportFee: Number(req.body.transportFee),
     total: Number(req.body.total),
     paid: Number(req.body.paid),
   });
@@ -144,6 +145,7 @@ const update = asyncHandler(async (req, res) => {
   invoice.staff = req.body.staff;
   invoice.invoiceCode = req.body.invoiceCode;
   invoice.note = req.body.note;
+  invoice.transportFee = req.body.transportFee;
   invoice.total = req.body.total;
   invoice.paid = req.body.paid;
 

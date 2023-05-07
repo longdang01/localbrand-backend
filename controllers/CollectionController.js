@@ -1,6 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const Collection = require("../models/Collection");
+const Lookbook = require("../models/Lookbook");
 const CollectionImage = require("../models/CollectionImage");
+// const LookBook = require("../models/LookBook");
 const { ObjectId } = require("mongodb");
 
 const get = asyncHandler(async (req, res) => {
@@ -41,6 +43,29 @@ const search = asyncHandler(async (req, res) => {
 
   // res.status(200).json({ collections: collections, count: count });
   res.status(200).json(collections);
+});
+
+const getByPath = asyncHandler(async (req, res) => {
+  const query = {
+    $and: [{ active: 1 }],
+  };
+  const sort = { createdAt: -1 };
+
+  const lookbooks = await Lookbook.find(query)
+    .sort(sort)
+    .populate("lookbookImages")
+    .populate("collectionInfo");
+  const result = lookbooks.filter((look) => {
+    console.log(look.collectionInfo.path);
+    console.log(req.body.path);
+    console.log(look.collectionInfo.path == req.body.path);
+
+    return look.collectionInfo.path == req.body.path;
+  });
+  console.log(req.body.path);
+  console.log(result);
+
+  res.status(200).json(result);
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -125,7 +150,8 @@ const remove = asyncHandler(async (req, res) => {
   collection.active = -1;
   const savedData = await collection.save();
 
-  // subCategory
+  // lookbook?
+  await Lookbook.updateMany({ collectionInfo: req.params.id }, { active: -1 });
 
   // await CollectionImage.updateMany({ collection: req.params.id }, { collection: null });
   await CollectionImage.updateMany(
@@ -139,6 +165,7 @@ module.exports = {
   get,
   search,
   getById,
+  getByPath,
   create,
   update,
   remove,

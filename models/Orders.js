@@ -18,10 +18,15 @@ const ordersSchema = mongoose.Schema(
     note: {
       type: String,
     },
+    transportFee: {
+      type: Number,
+      required: true,
+    },
     total: {
       type: Number,
       required: true,
     },
+
     /**
      * 1: da giao & thanh cong
      * 2: cho xac nhan
