@@ -250,7 +250,7 @@ const create = asyncHandler(async (req, res) => {
 
   const dataSend = {
     // link: `${process.env.BASE_URL}/api/users/verify/${user._id}/${access_token}`,
-    link: `http://localhost:3100/orders/${savedData.ordersCode}/`,
+    link: `${process.env.BASE_URL}/orders/${savedData.ordersCode}/`,
   };
   console.log(dataSend);
   console.log(req.body.customer);

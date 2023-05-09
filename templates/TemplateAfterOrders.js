@@ -116,7 +116,7 @@ const templateAfterOrders = (data) => {
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
           <tr>
             <td align="center" valign="top" style="padding: 36px 24px;">
-              <a href="http://localhost:3100/" target="_blank" style="display: inline-block;">
+              <a href="${process.env.BASE_URL}/" target="_blank" style="display: inline-block;">
                 <img src="https://scontent-hkg4-1.cdninstagram.com/v/t51.2885-19/266468600_309758127681924_8782165899038971354_n.jpg?stp=dst-jpg_s150x150&_nc_ht=scontent-hkg4-1.cdninstagram.com&_nc_cat=100&_nc_ohc=bEQkRyxbBn0AX_HIkYm&edm=ANmP7GQBAAAA&ccb=7-5&oh=00_AfA68dfQZqV0ohfg4O-WKT6u1ghFX5dtYFBMrcTte2W7Tg&oe=644B853C&_nc_sid=276363" alt="Logo" border="0" width="48" style="display: block; width: 48px; max-width: 48px; min-width: 48px;">
               </a>
             </td>

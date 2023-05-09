@@ -136,7 +136,7 @@ const register = asyncHandler(async (req, res) => {
     console.log("register", user);
     const dataSend = {
       // link: `${process.env.BASE_URL}/api/users/verify/${user._id}/${access_token}`,
-      link: `http://localhost:3100/verify/${user._id}/${access_token}`,
+      link: `${process.env.BASE_URL}/verify/${user._id}/${access_token}`,
     };
     await sendVerifyAccountMail(
       user.email,
@@ -194,7 +194,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const access_token = generateToken(user._id);
 
   const dataSend = {
-    link: `http://localhost:3100/reset-password/${user._id}/${access_token}`,
+    link: `${process.env.BASE_URL}/reset-password/${user._id}/${access_token}`,
   };
 
   await sendResetPassword(user.email, "Quên Mật Khẩu", dataSend);
