@@ -27,13 +27,13 @@ const cartRoute = require("./CartRoute");
 const cartDetailRoute = require("./CartDetailRoute");
 
 const vnPayRoute = require("./VnPayRoute");
+const staticsRoute = require("./StaticsRoute");
 
-const transportRouter = require("./transport");
-const paymentRouter = require("./payment");
-const newsRouter = require("./news");
-const roleRouter = require("./role");
-const staticsRouter = require("./statics");
-const importProductRouter = require("./importProduct");
+// const transportRouter = require("./transport");
+// const paymentRouter = require("./payment");
+// const newsRouter = require("./news");
+// const roleRouter = require("./role");
+// const importProductRouter = require("./importProduct");
 
 const lookbookRoute = require("./LookbookRoute");
 const lookbookImageRoute = require("./LookbookImageRoute");
@@ -71,12 +71,12 @@ const useRoutes = (app) => {
 
   app.use("/api/vnPays", vnPayRoute);
 
-  app.use("/api/transports", transportRouter);
-  app.use("/api/payments", paymentRouter);
-  app.use("/api/news", newsRouter);
-  app.use("/api/roles", roleRouter);
-  app.use("/api/statics", staticsRouter);
-  app.use("/api/importProducts", importProductRouter);
+  // app.use("/api/transports", transportRouter);
+  // app.use("/api/payments", paymentRouter);
+  // app.use("/api/news", newsRouter);
+  // app.use("/api/roles", roleRouter);
+  app.use("/api/statics", staticsRoute);
+  // app.use("/api/importProducts", importProductRouter);
 
   app.use("/api/lookbooks", lookbookRoute);
   app.use("/api/lookbookImages", lookbookImageRoute);
