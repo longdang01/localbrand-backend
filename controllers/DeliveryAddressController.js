@@ -68,7 +68,9 @@ const create = asyncHandler(async (req, res) => {
   }
 
   const sort = { updatedAt: 1 };
-  const query = { active: { $ne: -1 } };
+  const query = {
+    $and: [{ active: { $ne: -1 } }, { customer: req.body.customer }],
+  };
 
   const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
   res.status(200).json({
@@ -103,7 +105,9 @@ const update = asyncHandler(async (req, res) => {
   }
 
   const sort = { updatedAt: 1 };
-  const query = { active: { $ne: -1 } };
+  const query = {
+    $and: [{ active: { $ne: -1 } }, { customer: req.body.customer }],
+  };
 
   const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
   res.status(200).json({
