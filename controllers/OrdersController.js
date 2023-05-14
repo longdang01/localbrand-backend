@@ -181,7 +181,7 @@ const create = asyncHandler(async (req, res) => {
   let deliveryAddress = "";
   if (req.body.customer) {
     deliveryAddress = await DeliveryAddress.findOne({
-      $and: [{ active: 1 }, { customer: req.body.customer }],
+      $and: [{ active: 1 }, { customer: ObjectId(req.body.customer) }],
     });
 
     if (!deliveryAddress) {
@@ -254,14 +254,16 @@ const create = asyncHandler(async (req, res) => {
   };
   console.log(dataSend);
   console.log(req.body.customer);
-  const customerSelect = await Customer.findOne({
-    $and: [{ active: 1 }, { _id: req.body.customer }],
-  }).populate("user");
-  await sendAfterOrders(
-    customerSelect.user.email,
-    "[FRAGILE] Thư Cảm Ơn Bạn Đã Đặt Hàng",
-    dataSend
-  );
+  if (req.body.customer) {
+    const customerSelect = await Customer.findOne({
+      $and: [{ active: 1 }, { _id: ObjectId(req.body.customer) }],
+    }).populate("user");
+    await sendAfterOrders(
+      customerSelect.user.email,
+      "[FRAGILE] Thư Cảm Ơn Bạn Đã Đặt Hàng",
+      dataSend
+    );
+  }
   // const res1 = await Orders.findById(savedData._id).populate("ordersDetails");
   // res.status(200).json(res1);
   res
