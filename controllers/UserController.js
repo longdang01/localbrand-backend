@@ -69,7 +69,7 @@ const register = asyncHandler(async (req, res) => {
     password: hashedPassword,
     email,
     role: Number(role),
-    active: -1,
+    active: role == 5 ? -1 : 1,
   });
 
   let customer;
@@ -194,7 +194,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const access_token = generateToken(user._id);
 
   const dataSend = {
-    link: `${process.env.BASE_URL}/reset-password/${user._id}/${access_token}`,
+    link: `${user.role != 5 ? process.env.ADMIN_URL : process.env.CLIENT_URL}/reset-password/${user._id}/${access_token}`,
   };
 
   await sendResetPassword(user.email, "Quên Mật Khẩu", dataSend);

@@ -22,8 +22,11 @@ const get = asyncHandler(async (req, res) => {
 
 const search = asyncHandler(async (req, res) => {
   const sort = { createdAt: 1 };
-  // const page = Number(req.body.page) || 1;
-  // const pageSize = Number(req.body.pageSize);
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
+
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
 
   const query = req.body.searchData
     ? {
@@ -34,14 +37,12 @@ const search = asyncHandler(async (req, res) => {
       }
     : { active: 1 };
 
-  const categories = await Category.find(query).sort(sort);
-  // .skip(pageSize * (page - 1))
-  // .limit(pageSize);
+  const [categories, total] = await Promise.all([
+    Category.find(query).sort(sort).skip(skip).limit(limit),
+    Category.countDocuments(query),
+  ]);
 
-  // const count = await Category.find(query).sort(sort).countDocuments();
-
-  // res.status(200).json({ categories: categories, count: count });
-  res.status(200).json(categories);
+  res.status(200).json({ categories, total });
 });
 
 const getById = asyncHandler(async (req, res) => {

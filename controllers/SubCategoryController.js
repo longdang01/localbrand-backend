@@ -15,7 +15,12 @@ const get = asyncHandler(async (req, res) => {
 
 const search = asyncHandler(async (req, res) => {
   const sort = { createdAt: 1 };
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
 
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
+  
   const query = req.body.searchData
     ? {
         $and: [
@@ -25,16 +30,21 @@ const search = asyncHandler(async (req, res) => {
       }
     : { active: 1 };
 
-  const subCategories = await SubCategory.find(query)
-    .sort(sort)
-    .populate("category");
+  // const subCategories = await SubCategory.find(query)
+  //   .sort(sort)
+  //   .populate("category");
 
-  const categories = await Category.find(query)
+  const [subCategories, total] = await Promise.all([
+    SubCategory.find(query).sort(sort).skip(skip).limit(limit),
+    SubCategory.countDocuments(query),
+  ]);
+
+  const categories = await Category.find({active: 1})
     .sort(sort)
     .populate("subCategories");
   res
     .status(200)
-    .json({ subCategories: subCategories, categories: categories });
+    .json({ subCategories: subCategories, categories: categories, total});
 });
 
 const getById = asyncHandler(async (req, res) => {

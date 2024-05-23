@@ -15,7 +15,11 @@ const get = asyncHandler(async (req, res) => {
 
 const search = asyncHandler(async (req, res) => {
   const sort = { createdAt: 1 };
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
 
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
   const query = req.body.searchData
     ? {
         $and: [
@@ -25,8 +29,13 @@ const search = asyncHandler(async (req, res) => {
       }
     : { active: 1 };
 
-  const brands = await Brand.find(query).sort(sort);
-  res.status(200).json(brands);
+  // const brands = await Brand.find(query).sort(sort);
+  const [brands, total] = await Promise.all([
+    Brand.find(query).sort(sort).skip(skip).limit(limit),
+    Brand.countDocuments(query),
+  ]);
+  res.status(200).json({ brands, total });
+
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -36,6 +45,7 @@ const getById = asyncHandler(async (req, res) => {
   const brand = await Brand.findOne(query);
 
   res.status(200).json(brand);
+  
 });
 
 const create = asyncHandler(async (req, res) => {

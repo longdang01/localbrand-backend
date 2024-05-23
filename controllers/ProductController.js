@@ -175,6 +175,11 @@ const search = asyncHandler(async (req, res) => {
   const sort = { createdAt: -1 };
   // const page = Number(req.body.page) || 1;
   // const pageSize = Number(req.body.pageSize);
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
+
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
 
   const query = req.body.searchData
     ? {
@@ -185,9 +190,31 @@ const search = asyncHandler(async (req, res) => {
       }
     : { active: 1 };
 
-  const products = await Product.find(query)
-    .sort(sort)
-    .populate("subCategory")
+  // const products = await Product.find(query)
+  //   .sort(sort)
+  //   .populate("subCategory")
+  //   .populate({
+  //     path: "colors",
+  //     populate: [
+  //       {
+  //         path: "sizes",
+  //         model: "Size",
+  //       },
+  //       {
+  //         path: "images",
+  //         model: "ColorImage",
+  //       },
+  //       {
+  //         path: "discount",
+  //         model: "Discount",
+  //       },
+  //     ],
+  //   });
+  // .skip(pageSize * (page - 1))
+  // .limit(pageSize);
+
+  const [products, total] = await Promise.all([
+    Product.find(query).sort(sort).populate("subCategory")
     .populate({
       path: "colors",
       populate: [
@@ -204,9 +231,10 @@ const search = asyncHandler(async (req, res) => {
           model: "Discount",
         },
       ],
-    });
-  // .skip(pageSize * (page - 1))
-  // .limit(pageSize);
+    })
+    .skip(skip).limit(limit),
+    Product.countDocuments(query),
+  ]);
 
   // const count = await Product.find(query).sort(sort).countDocuments();
 
@@ -222,6 +250,7 @@ const search = asyncHandler(async (req, res) => {
     brands: brands,
     suppliers: suppliers,
     collections: collections,
+    total
   });
 });
 

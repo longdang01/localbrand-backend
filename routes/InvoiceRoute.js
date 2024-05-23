@@ -9,6 +9,7 @@ const {
   create,
   update,
   remove,
+  getByCode,
 } = require("../controllers/InvoiceController");
 
 //list api
@@ -19,5 +20,6 @@ router
   .get(getById)
   .put(protect, protectImport, update)
   .delete(protect, protectImport, remove);
+router.post("/get-by-code", getByCode);
 
 module.exports = router;

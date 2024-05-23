@@ -14,8 +14,8 @@ const app = express();
 const port = process.env.PORT || 5100;
 connectDB();
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(
   cors({
     credentials: true,
