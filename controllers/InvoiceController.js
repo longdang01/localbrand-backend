@@ -97,6 +97,7 @@ const getByCode = asyncHandler(async (req, res) => {
   const query = {
     $and: [{ active: 1 }, { invoiceCode: req.body.invoiceCode }],
   };
+  
   const invoice = await Invoice.findOne(query)
     .populate({
       path: "invoiceDetails",

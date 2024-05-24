@@ -100,6 +100,7 @@ const update = asyncHandler(async (req, res) => {
   staff.phone = req.body.phone;
 
   user.email = req.body.email;
+  user.role = req.body.role;
   await user.save();
 
   const savedData = await staff.save();

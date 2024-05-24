@@ -8,21 +8,41 @@ const get = asyncHandler(async (req, res) => {
   const sort = { createdAt: 1 };
   // const page = Number(req.body.page) || 1;
   // const pageSize = Number(req.body.pageSize);
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
 
-  const customers = await Customer.find(query).sort(sort);
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
+
+  // const customers = await Customer.find(query).sort(sort);
   // .skip(pageSize * (page - 1))
   // .limit(pageSize);
 
   // const count = await Customer.find(query).sort(sort).countDocuments();
 
   // res.status(200).json({ customers: customers, count: count });
-  res.status(200).json(customers);
+  // res.status(200).json(customers);
+  const [customers, total] = await Promise.all([
+    Customer.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit),
+    Customer.countDocuments(query),
+  ]);
+
+  // res.status(200).json({ staffs, total });
+  res.status(200).json({ customers: customers, total });
 });
 
 const search = asyncHandler(async (req, res) => {
   const sort = { createdAt: 1 };
   // const page = Number(req.body.page) || 1;
   // const pageSize = Number(req.body.pageSize);
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
+
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
 
   const query = req.body.searchData
     ? {
@@ -33,14 +53,24 @@ const search = asyncHandler(async (req, res) => {
       }
     : { active: 1 };
 
-  const customers = await Customer.find(query).sort(sort);
+  // const customers = await Customer.find(query).sort(sort);
   // .skip(pageSize * (page - 1))
   // .limit(pageSize);
 
   // const count = await Customer.find(query).sort(sort).countDocuments();
 
   // res.status(200).json({ customers: customers, count: count });
-  res.status(200).json(customers);
+  // res.status(200).json(customers);
+  const [customers, total] = await Promise.all([
+    Customer.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit),
+    Customer.countDocuments(query),
+  ]);
+
+  // res.status(200).json({ staffs, total });
+  res.status(200).json({ customers: customers, total });
 });
 
 const getById = asyncHandler(async (req, res) => {

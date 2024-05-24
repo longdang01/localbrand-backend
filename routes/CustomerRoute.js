@@ -21,6 +21,6 @@ router
   .route("/:id")
   .get(getById)
   .put(protect, protectClient, update)
-  .delete(protect, protectClient, remove);
+  .delete(protect, protectSales, remove);
 
 module.exports = router;

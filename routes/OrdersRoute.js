@@ -14,6 +14,7 @@ const {
   create,
   update,
   remove,
+  getByCode
 } = require("../controllers/OrdersController");
 
 router.post("/search", search);
@@ -27,5 +28,7 @@ router
   .get(getById)
   .put(protect, protectSales, update)
   .delete(protect, protectSales, remove);
+router.post("/get-by-code", getByCode);
+
 
 module.exports = router;

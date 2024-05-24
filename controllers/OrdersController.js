@@ -36,7 +36,11 @@ const search = asyncHandler(async (req, res) => {
   const sort = { createdAt: -1 };
   // const page = Number(req.body.page) || 1;
   // const pageSize = Number(req.body.pageSize);
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
 
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
   const query = req.body.searchData
     ? {
         $and: [
@@ -46,70 +50,130 @@ const search = asyncHandler(async (req, res) => {
       }
     : { active: 1 };
 
-  const orderses = await Orders.find(query)
-    .sort(sort)
-    .populate("deliveryAddress")
-    .populate({
-      path: "ordersDetails",
-      populate: [
-        {
-          path: "color",
-          model: "Color",
-          populate: [
-            {
-              path: "sizes",
-              model: "Size",
-            },
-            {
-              path: "images",
-              model: "ColorImage",
-            },
-            {
-              path: "discount",
-              model: "Discount",
-            },
-          ],
-        },
-        {
-          path: "size",
-          model: "Size",
-        },
-        {
-          path: "product",
-          model: "Product",
-          populate: [
-            {
-              path: "colors",
-              model: "Color",
-              populate: [
-                {
-                  path: "sizes",
-                  model: "Size",
-                },
-                {
-                  path: "images",
-                  model: "ColorImage",
-                },
-                {
-                  path: "discount",
-                  model: "Discount",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    })
-    .populate("ordersStatuses");
+  const [orders, total] = await Promise.all([
+    Orders.find(query)
+      .sort(sort)
+      .populate("deliveryAddress")
+      .populate({
+        path: "ordersDetails",
+        populate: [
+          {
+            path: "color",
+            model: "Color",
+            populate: [
+              {
+                path: "sizes",
+                model: "Size",
+              },
+              {
+                path: "images",
+                model: "ColorImage",
+              },
+              {
+                path: "discount",
+                model: "Discount",
+              },
+            ],
+          },
+          {
+            path: "size",
+            model: "Size",
+          },
+          {
+            path: "product",
+            model: "Product",
+            populate: [
+              {
+                path: "colors",
+                model: "Color",
+                populate: [
+                  {
+                    path: "sizes",
+                    model: "Size",
+                  },
+                  {
+                    path: "images",
+                    model: "ColorImage",
+                  },
+                  {
+                    path: "discount",
+                    model: "Discount",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+      .populate("ordersStatuses")
+      .skip(skip)
+      .limit(limit),
+    Orders.countDocuments(query),
+  ]);
+  // const orderses = await Orders.find(query)
+  //   .sort(sort)
+  //   .populate("deliveryAddress")
+  //   .populate({
+  //     path: "ordersDetails",
+  //     populate: [
+  //       {
+  //         path: "color",
+  //         model: "Color",
+  //         populate: [
+  //           {
+  //             path: "sizes",
+  //             model: "Size",
+  //           },
+  //           {
+  //             path: "images",
+  //             model: "ColorImage",
+  //           },
+  //           {
+  //             path: "discount",
+  //             model: "Discount",
+  //           },
+  //         ],
+  //       },
+  //       {
+  //         path: "size",
+  //         model: "Size",
+  //       },
+  //       {
+  //         path: "product",
+  //         model: "Product",
+  //         populate: [
+  //           {
+  //             path: "colors",
+  //             model: "Color",
+  //             populate: [
+  //               {
+  //                 path: "sizes",
+  //                 model: "Size",
+  //               },
+  //               {
+  //                 path: "images",
+  //                 model: "ColorImage",
+  //               },
+  //               {
+  //                 path: "discount",
+  //                 model: "Discount",
+  //               },
+  //             ],
+  //           },
+  //         ],
+  //       },
+  //     ],
+  //   })
+  //   .populate("ordersStatuses");
   // .skip(pageSize * (page - 1))
   // .limit(pageSize);
 
   // const count = await Orders.find(query).sort(sort).countDocuments();
 
   // res.status(200).json({ orderses: orderses, count: count });
-  const products = await Product.find(query);
+  const products = await Product.find({ active: 1 });
 
-  res.status(200).json({ orderses: orderses, products: products });
+  res.status(200).json({ orders: orders, products: products, total });
 });
 
 const searchByClient = asyncHandler(async (req, res) => {
@@ -166,9 +230,43 @@ const getById = asyncHandler(async (req, res) => {
         },
       ],
     })
-    .populate("ordersStatuses");
+    .populate("ordersStatuses")
+    .populate({
+      path: "customer",
+      model: "Customer"
+    });
 
   res.status(200).json(orders);
+});
+
+const getByCode = asyncHandler(async (req, res) => {
+  const query = {
+    $and: [{ active: 1 }, { ordersCode: req.body.ordersCode }],
+  };
+
+  const order = await Orders.findOne(query)
+    .populate({
+      path: "ordersDetails",
+      populate: [
+        {
+          path: "product",
+          model: "Product",
+        },
+        {
+          path: "color",
+          model: "Color",
+        },
+        {
+          path: "size",
+          model: "Size",
+        },
+      ],
+    })
+    .populate("ordersStatuses")
+    .populate("customer");
+
+
+  res.status(200).json(order);
 });
 
 const create = asyncHandler(async (req, res) => {
@@ -374,6 +472,7 @@ module.exports = {
   search,
   searchByClient,
   getById,
+  getByCode,
   create,
   update,
   remove,
