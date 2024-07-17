@@ -13,6 +13,11 @@ const get = asyncHandler(async (req, res) => {
 
 const search = asyncHandler(async (req, res) => {
   const sort = { updatedAt: 1 };
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
+
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
 
   const query = req.body.searchData
     ? {
@@ -26,8 +31,13 @@ const search = asyncHandler(async (req, res) => {
       }
     : { $and: [{ customer: req.body.customer }, { active: { $ne: -1 } }] };
 
-  const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
-  res.status(200).json(deliveryAddresses);
+  const [deliveryAddresses, total] = await Promise.all([
+    DeliveryAddress.find(query).sort(sort).skip(skip).limit(limit),
+    DeliveryAddress.countDocuments(query),
+  ]);
+  res.status(200).json({ deliveryAddresses, total });
+  // const deliveryAddresses = await DeliveryAddress.find(query).sort(sort);
+  // res.status(200).json(deliveryAddresses);
 });
 
 const getById = asyncHandler(async (req, res) => {

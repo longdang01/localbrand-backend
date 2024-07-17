@@ -69,7 +69,8 @@ const register = asyncHandler(async (req, res) => {
     password: hashedPassword,
     email,
     role: Number(role),
-    active: role == 5 ? -1 : 1,
+    // active: role == 5 ? -1 : 1,
+    active: 1,
   });
 
   let customer;
@@ -133,16 +134,16 @@ const register = asyncHandler(async (req, res) => {
   const access_token = generateToken(user._id);
 
   if (user) {
-    console.log("register", user);
-    const dataSend = {
-      // link: `${process.env.BASE_URL}/api/users/verify/${user._id}/${access_token}`,
-      link: `${process.env.BASE_URL}/verify/${user._id}/${access_token}`,
-    };
-    await sendVerifyAccountMail(
-      user.email,
-      "[FRAGILE] Xác Minh Tài Khoản",
-      dataSend
-    );
+    // console.log("register", user);
+    // const dataSend = {
+    //   // link: `${process.env.BASE_URL}/api/users/verify/${user._id}/${access_token}`,
+    //   link: `${process.env.CLIENT_URL}/verify/${user._id}/${access_token}`,
+    // };
+    // await sendVerifyAccountMail(
+    //   user.email,
+    //   "[FRAGILE] Xác Minh Tài Khoản",
+    //   dataSend
+    // );
 
     res.status(201).json({
       user: {
@@ -194,7 +195,10 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const access_token = generateToken(user._id);
 
   const dataSend = {
-    link: `${user.role != 5 ? process.env.ADMIN_URL : process.env.CLIENT_URL}/reset-password/${user._id}/${access_token}`,
+    link: `${
+      user.role != 5 ? process.env.ADMIN_URL : 
+      process.env.CLIENT_URL
+    }/${req.body.locale}/reset-password/${user._id}/${access_token}`,
   };
 
   await sendResetPassword(user.email, "Quên Mật Khẩu", dataSend);

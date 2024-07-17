@@ -44,7 +44,11 @@ const search = asyncHandler(async (req, res) => {
   // .skip(pageSize * (page - 1))
   // .limit(pageSize);
   const [collections, total] = await Promise.all([
-    Collection.find(query).sort(sort).skip(skip).limit(limit),
+    Collection.find(query)
+      .populate("collectionImages")
+      .sort(sort)
+      .skip(skip)
+      .limit(limit),
     Collection.countDocuments(query),
   ]);
 

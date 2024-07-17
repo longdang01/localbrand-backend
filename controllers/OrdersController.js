@@ -178,6 +178,11 @@ const search = asyncHandler(async (req, res) => {
 
 const searchByClient = asyncHandler(async (req, res) => {
   const sort = { createdAt: -1 };
+  const pageIndex = Number(req.body.pageIndex) || 1;
+  const pageSize = Number(req.body.pageSize) || 10;
+
+  const skip = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
   // status,
 
   // const page = Number(req.body.page) || 1;
@@ -193,10 +198,10 @@ const searchByClient = asyncHandler(async (req, res) => {
       }
     : { $and: [{ active: 1 }, { customer: req.body.customer }] };
 
-  const orderses = await Orders.find(query)
-    .sort(sort)
-    .populate("ordersDetails")
-    .populate("ordersStatuses");
+  // const orderses = await Orders.find(query)
+  //   .sort(sort)
+  //   .populate("ordersDetails")
+  //   .populate("ordersStatuses");
   // .skip(pageSize * (page - 1))
   // .limit(pageSize);
 
@@ -205,7 +210,12 @@ const searchByClient = asyncHandler(async (req, res) => {
   // res.status(200).json({ orderses: orderses, count: count });
   const products = await Product.find(query);
 
-  res.status(200).json({ orderses: orderses, products: products });
+  const [orderses, total] = await Promise.all([
+    Orders.find(query).sort(sort).skip(skip).limit(limit),
+    Orders.countDocuments(query),
+  ]);
+
+  res.status(200).json({ orderses: orderses, total, products: products });
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -233,7 +243,7 @@ const getById = asyncHandler(async (req, res) => {
     .populate("ordersStatuses")
     .populate({
       path: "customer",
-      model: "Customer"
+      model: "Customer",
     });
 
   res.status(200).json(orders);
@@ -263,8 +273,8 @@ const getByCode = asyncHandler(async (req, res) => {
       ],
     })
     .populate("ordersStatuses")
+    .populate("deliveryAddress")
     .populate("customer");
-
 
   res.status(200).json(order);
 });
